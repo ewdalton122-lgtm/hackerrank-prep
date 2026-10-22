@@ -1,0 +1,281 @@
+// Stage 5: system design vocabulary (multiple-choice level) and stakeholder communication.
+export const systems = [
+  {
+    id: 'sd-scale',
+    title: 'Scaling and availability vocabulary',
+    minutes: 50,
+    blurb: 'Load, redundancy and failure: the words behind most architecture multiple-choice questions.',
+    blocks: [
+      { t: 'p', text: 'Multiple-choice design questions rarely ask you to draw anything. They test vocabulary plus trade-offs: given a problem, which tool fits?' },
+      { t: 'list', items: [
+        '**Vertical scaling**: a bigger machine. Simple, but has a ceiling and is a single point of failure.',
+        '**Horizontal scaling**: more machines behind a **load balancer** that spreads requests across them.',
+        '**Stateless services** keep no per-user data in memory, so any machine can handle any request. That is what makes horizontal scaling easy.',
+        '**Replication**: keeping copies of data on several machines so a failure does not lose it.',
+        '**Failover**: automatically switching to a healthy copy when one fails. **Health checks** detect the failure.',
+        '**Latency** is how long one request takes. **Throughput** is how many requests per second the system handles.',
+      ] },
+      { t: 'analogy', text: 'Horizontal scaling is opening more checkout lanes, with a greeter (the load balancer) sending each shopper to a free lane. Replication is keeping a copy of the ledger in a second office.' },
+      { t: 'h', text: 'How to attack a question' },
+      { t: 'p', text: 'Underline the **constraint word**: "must not lose data" (replication), "traffic spikes at month-end" (horizontal scaling plus load balancer), "near-instant reads" (cache). Then eliminate options that just throw more hardware or licences at the problem.' },
+    ],
+    quiz: [
+      {
+        q: 'Traffic doubles every holiday season and a single server is maxed out. The best long-term fix is:',
+        options: ['Buy one much larger server', 'Add more servers behind a load balancer', 'Ask users to retry later', 'Disable logging'],
+        answer: 1,
+        explain: [
+          'Vertical scaling has a ceiling and keeps a single point of failure.',
+          'Correct. Horizontal scaling plus a load balancer grows with demand.',
+          'That pushes the problem onto users instead of fixing capacity.',
+          'Logging is rarely the bottleneck, and turning it off hurts operations.',
+        ],
+      },
+      {
+        q: 'One database server fails and the application goes down for hours. Which design addition most directly prevents that?',
+        options: ['A faster CPU', 'A replica with automatic failover', 'A bigger disk', 'A longer timeout'],
+        answer: 1,
+        explain: [
+          'Speed does not help when the machine is gone.',
+          'Correct. A standby copy takes over when the primary fails.',
+          'Capacity is not the issue here; availability is.',
+          'A longer timeout just makes users wait longer for an error.',
+        ],
+      },
+      {
+        q: 'Why are stateless services easier to scale horizontally?',
+        options: [
+          'They use less memory',
+          'Any server can handle any request because no user data is stuck on one machine',
+          'They never need a database',
+          'They run only once a day',
+        ],
+        answer: 1,
+        explain: [
+          'Memory use is not the key point.',
+          'Correct. Nothing ties a user to a specific server.',
+          'They still use databases; they just do not keep session state locally.',
+          'This has nothing to do with scheduling.',
+        ],
+      },
+      {
+        q: 'Latency measures:',
+        options: ['How many requests per second the system handles', 'How long a single request takes', 'How much data is stored', 'How many servers there are'],
+        answer: 1,
+        explain: [
+          'That is throughput.',
+          'Correct. Latency is time per request.',
+          'That is storage, not speed.',
+          'That is capacity.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sd-async',
+    title: 'Caching, queues and multi-tenancy',
+    minutes: 50,
+    blurb: 'Three patterns that show up again and again, especially in SaaS.',
+    blocks: [
+      { t: 'h', text: 'Caching' },
+      { t: 'p', text: 'A **cache** keeps recent answers close so you skip slow work. Trade-off: cached data can go stale, so it needs a time-to-live (**TTL**) or an invalidation rule. A **CDN** caches static files near users.' },
+      { t: 'analogy', text: 'A cache is keeping last night\'s report on hand instead of re-running the query.' },
+      { t: 'h', text: 'Queues and asynchronous work' },
+      { t: 'p', text: 'Slow or bursty work (sending thousands of emails, large imports) goes into a **message queue**. The user gets an instant "accepted" and workers process the jobs in the background, retrying on failure. Queues absorb spikes and prevent lost requests.' },
+      { t: 'analogy', text: 'A queue is an inbox for batch jobs: accept now, process later, never lose a request.' },
+      { t: 'h', text: 'Multi-tenancy' },
+      { t: 'p', text: '**Multi-tenant** software serves many customers on shared infrastructure while keeping each customer\'s data isolated. Benefits: lower cost, easy upgrades for everyone. Challenges: **noisy neighbours** (one tenant hogging resources) and strict data isolation, which is why platforms impose **per-tenant limits**.' },
+      { t: 'analogy', text: 'One building, many tenants: shared plumbing, locked apartments, and a rule that nobody may run the water all day.' },
+    ],
+    quiz: [
+      {
+        q: 'A report page is slow because it re-runs an expensive query on every visit, but the data only changes hourly. Best fix?',
+        options: ['Cache the result with a one-hour TTL', 'Add more RAM to the client', 'Run the query twice for safety', 'Move to a larger monitor'],
+        answer: 0,
+        explain: [
+          'Correct. A cache with a TTL matching how often data changes removes repeated work.',
+          'The client is not the bottleneck.',
+          'That doubles the load.',
+          'Not related.',
+        ],
+      },
+      {
+        q: 'A customer uploads 50,000 records and the web request times out. A good redesign is to:',
+        options: ['Raise the timeout to one hour', 'Accept the upload, put it on a queue, process it in the background and notify the user', 'Reject files over 100 rows', 'Make users split the file by hand'],
+        answer: 1,
+        explain: [
+          'Long synchronous requests are fragile and hold resources.',
+          'Correct. Asynchronous processing with a queue is the standard answer.',
+          'That throws away the requirement.',
+          'That pushes the work onto the user.',
+        ],
+      },
+      {
+        q: 'In a multi-tenant system, one customer runs a huge job that slows everyone else. This is called:',
+        options: ['A cache miss', 'A noisy neighbour', 'Failover', 'Sharding'],
+        answer: 1,
+        explain: [
+          'A cache miss is when requested data is not in the cache.',
+          'Correct. Per-tenant limits and throttling are the usual protection.',
+          'Failover is switching to a standby.',
+          'Sharding splits data across databases.',
+        ],
+      },
+      {
+        q: 'What is the main risk of caching?',
+        options: ['Cached data can be out of date', 'It makes the system slower', 'It prevents scaling', 'It requires a queue'],
+        answer: 0,
+        explain: [
+          'Correct. That is why TTLs and invalidation exist.',
+          'Caching is meant to make things faster.',
+          'Caches usually help systems scale.',
+          'They are independent patterns.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sd-store',
+    title: 'Choosing a data store',
+    minutes: 40,
+    blurb: 'Relational, key-value, document and when each one fits.',
+    blocks: [
+      { t: 'list', items: [
+        '**Relational (SQL)**: structured tables, joins, strong consistency, transactions (**ACID**). Best for money, orders and anything where correctness matters.',
+        '**Key-value**: look up a value by key, extremely fast and simple. Best for sessions, caches and counters.',
+        '**Document**: flexible JSON-like records. Best when each record has a different shape.',
+        '**Wide-column / large-scale NoSQL**: huge write volumes spread across many machines, trading some consistency for scale.',
+      ] },
+      { t: 'p', text: '**Indexes** make reads faster at the cost of slower writes and extra storage, like an index at the back of a book. **Sharding** splits one huge dataset across several databases. **Eventual consistency** means copies agree "soon", not instantly.' },
+      { t: 'tip', text: 'Default thinking: if the question mentions transactions, money or complex joins, choose relational. If it mentions huge scale and simple lookups, think key-value or NoSQL.' },
+    ],
+    quiz: [
+      {
+        q: 'A banking ledger must never show a half-completed transfer. Which fits best?',
+        options: ['A relational database with transactions', 'A cache', 'A key-value store with eventual consistency', 'A CDN'],
+        answer: 0,
+        explain: [
+          'Correct. Transactions make a transfer all-or-nothing.',
+          'A cache is temporary and not a source of truth.',
+          'Eventual consistency allows temporarily wrong balances.',
+          'A CDN serves static files.',
+        ],
+      },
+      {
+        q: 'You need very fast lookups of user session data by a session id. Best fit?',
+        options: ['Key-value store', 'A data warehouse', 'A relational database with 12 joins', 'A message queue'],
+        answer: 0,
+        explain: [
+          'Correct. Key in, value out, extremely fast.',
+          'Warehouses are for analysis, not quick session lookups.',
+          'Joins add work you do not need for a simple lookup.',
+          'Queues pass messages; they do not store session lookups.',
+        ],
+      },
+      {
+        q: 'What is the trade-off of adding many indexes to a table?',
+        options: ['Reads get faster but writes get slower', 'Writes get faster but reads get slower', 'No trade-off', 'Data loses consistency'],
+        answer: 0,
+        explain: [
+          'Correct. Each write must also update every index.',
+          'It is the other way around.',
+          'There is always a cost: write speed and storage.',
+          'Indexes do not change correctness.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sd-mcq',
+    title: 'Multiple-choice technique',
+    minutes: 20,
+    blurb: 'How to read questions that allow more than one right answer.',
+    blocks: [
+      { t: 'list', items: [
+        'Some questions have **one** correct option and some have **several**. Read the instruction line carefully.',
+        'On multiple-correct questions, points are shared across the correct options. **Picking more options than there are correct answers can score zero.** Do not over-select.',
+        'Some tests use negative marking for wrong answers. Check your test instructions before guessing.',
+        'Answers are auto-saved when time runs out, but only if you selected them.',
+        'Eliminate first. Two options are usually clearly wrong; decide between the remaining two using the constraint word.',
+      ] },
+    ],
+    quiz: [
+      {
+        q: 'A question says "Select all that apply" and has two correct answers. You are sure of one and think a second is "maybe". What is the safest approach?',
+        options: [
+          'Select every option to be sure of catching both',
+          'Select the one you are sure of plus the best remaining candidate, and no more than two in total',
+          'Skip the question',
+          'Select none',
+        ],
+        answer: 1,
+        explain: [
+          'Selecting more options than there are correct answers can score zero.',
+          'Correct. Keep your total at the number of correct answers the question implies.',
+          'Skipping scores nothing when partial credit is possible.',
+          'Selecting none scores nothing.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sk-vp',
+    title: 'Written response: reset an ambitious ask',
+    minutes: 45,
+    blurb: 'Practice a structured, blame-free reply under a word limit.',
+    blocks: [
+      { t: 'p', text: 'Stakeholder questions test judgment and structure, not coding. Use this five-part shape for almost any difficult reply:' },
+      { t: 'list', items: [
+        '**1. Acknowledge the goal.** Show you understand why they want it.',
+        '**2. State the key fact or constraint**, neutrally and without blame.',
+        '**3. Offer two options** with a clear difference between them.',
+        '**4. Recommend one** and say why.',
+        '**5. Close with a next step**, an owner and a date.',
+      ] },
+    ],
+    exercise: {
+      kind: 'written',
+      prompt: 'A VP says in the hallway: "We need the AI agent to handle all of our customer service by the end of the quarter." You know the customer data is scattered across three systems and not yet cleaned. Write the reply you would send (about 100 to 150 words).',
+      minWords: 60,
+      rubric: [
+        { id: 'goal', label: 'Acknowledges the VP\'s goal before raising problems', test: /goal|understand|appreciate|great|agree|ambition|makes sense|shared/i },
+        { id: 'fact', label: 'States the data constraint neutrally, without blaming anyone', test: /data|systems|clean|scattered|consolidat|ready/i },
+        { id: 'options', label: 'Offers at least two options (for example phased scope vs full scope)', test: /option|alternatively|either|phase|first|then|versus|instead/i },
+        { id: 'rec', label: 'Makes a clear recommendation with a reason', test: /recommend|suggest|propose|best path|i['’]d start/i },
+        { id: 'next', label: 'Ends with a concrete next step, owner or date', test: /next step|this week|by (mon|tue|wed|thu|fri)|schedule|workshop|call|session|follow up/i },
+      ],
+      model: 'Thanks for raising this. Automating customer service by quarter-end is exactly the outcome worth aiming for, and I want to get us there reliably.\n\nThe constraint is data: customer information currently sits in three systems that are not yet consolidated, and an agent is only as good as what it can see.\n\nTwo ways forward. Option A: launch the agent for the two or three highest-volume request types (order status, password resets) by quarter-end, then expand each month. Option B: wait to cover everything at once, which likely lands next quarter.\n\nI recommend Option A. It shows real results this quarter, builds trust, and lets us fix data issues in priority order.\n\nNext step: can we hold a 45-minute scoping session this week with service operations to pick the first request types? I will send options by Friday.',
+    },
+  },
+  {
+    id: 'sk-date',
+    title: 'Written response: a date you cannot hit',
+    minutes: 45,
+    blurb: 'Reset an expectation without blaming a partner.',
+    blocks: [
+      { t: 'p', text: 'Same five-part shape, higher stakes. The skill is to stay factual and keep the relationship intact.' },
+    ],
+    exercise: {
+      kind: 'written',
+      prompt: 'A partner told the customer your team would deliver the first agent demo by next Friday. You know it cannot be ready until the week after, because required access has not been granted. Write your message to the customer (about 100 to 150 words).',
+      minWords: 60,
+      rubric: [
+        { id: 'goal', label: 'Acknowledges the customer\'s goal or timeline', test: /goal|understand|appreciate|thank|commit|timeline|excited/i },
+        { id: 'fact', label: 'States the real constraint (access) clearly and neutrally', test: /access|permission|credential|environment|dependency|waiting/i },
+        { id: 'options', label: 'Gives two options (for example reduced demo now vs full demo later)', test: /option|alternatively|either|instead|or we|versus|reduced|scaled/i },
+        { id: 'rec', label: 'Recommends one option', test: /recommend|suggest|propose|prefer/i },
+        { id: 'next', label: 'Names a next step with an owner or date', test: /next step|by (mon|tue|wed|thu|fri)|this week|follow up|schedule|call|confirm/i },
+      ],
+      model: 'Thank you for your patience, and I know next Friday was the date you were planning around. I want to be upfront so you can plan.\n\nThe full demo depends on environment access that has not been granted yet, and without it we cannot connect the agent to your real data.\n\nTwo options. Option A: on Friday we show a scaled-down demo using sample data, so your team can react to the experience. Option B: we hold the demo the following Friday with your real data connected.\n\nI recommend Option A on Friday, followed by the full demo the week after. You get early feedback and no loss of momentum.\n\nNext step: if your IT contact can confirm access by Wednesday, I will lock in the full demo date the same day. Can we agree on that?',
+    },
+  },
+  {
+    id: 'sd-r-primer',
+    title: 'Study: System Design Primer (selected sections)',
+    minutes: 360,
+    blurb: 'Read only what the multiple-choice questions need.',
+    links: [
+      { label: 'The System Design Primer', url: 'https://github.com/donnemartin/system-design-primer', use: 'Read: CAP theorem, consistency and availability patterns, load balancer, horizontal scaling, database (replication, sharding), SQL vs NoSQL, cache, asynchronism (message queues, back pressure), CDN. Skip the interview walk-throughs.' },
+    ],
+  },
+];

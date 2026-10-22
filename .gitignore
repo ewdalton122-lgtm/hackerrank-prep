@@ -1,0 +1,7 @@
+# Internal Salesforce material: never publish to GitHub
+research/internal/
+
+.DS_Store
+.env
+.env.*
+node_modules/
