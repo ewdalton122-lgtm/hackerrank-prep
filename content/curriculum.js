@@ -5,6 +5,7 @@ import { prompts } from './prompts.js';
 import { systems } from './systems.js';
 import { practice } from './practice.js';
 import { sqlDrills } from './sqlpractice.js';
+import { sqf, sqa } from './sqlmore.js';
 import { promptMore } from './promptdrills.js';
 import { interview } from './interview.js';
 import { pythonMore } from './pythonmore.js';
@@ -71,13 +72,18 @@ export const STAGES = [
   },
   {
     id: 's2', num: 2, title: 'SQL foundations', roles: ['ds', 'fde'],
-    summary: 'Filtering, grouping and joins. The SQL version of what you already do in Excel.',
-    items: sql,
+    summary: 'Filtering, text, NULLs, grouping and joins, with graded practice on several small databases. The SQL version of what you already do in Excel.',
+    items: (() => {
+      const by = Object.fromEntries([...sql, ...sqf].map((i) => [i.id, i]));
+      const order = ['sql-select', 'sqf-distinct', 'sql-filter', 'sqf-order', 'sqf-like', 'sqf-null', 'sqf-strings', 'sqf-concat', 'sqf-math', 'sqf-case',
+        'sql-group', 'sqf-countd', 'sql-having', 'sqf-having2', 'sql-join', 'sqf-multijoin', 'sql-left', 'sqf-selfjoin', 'sqf-union', 'sqf-in', 'sqf-exists'];
+      return [...order.map((id) => by[id]), ...sql.filter((i) => i.optional)];
+    })(),
   },
   {
     id: 's3', num: 3, title: 'SQL advanced', roles: ['ds', 'fde'],
     summary: 'Window functions, ranking, running totals and date functions.',
-    items: [...sqlAdv.slice(0, 3), ...sqlDrills, ...sqlAdv.slice(3)],
+    items: [...sqlAdv.slice(0, 3), ...sqa.slice(0, 3), ...sqlDrills, ...sqa.slice(3), ...sqlAdv.slice(3)],
   },
   {
     id: 's4', num: 4, title: 'Prompt engineering', roles: ['ds', 'fde'],

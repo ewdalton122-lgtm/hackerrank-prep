@@ -1,5 +1,5 @@
 // Browser runners: Python (Pyodide in a worker) and SQL (sql.js).
-import { DATASET } from '../../content/sql.js';
+import { DATASETS } from '../../content/sqldata.js';
 
 // ---------------- Python ----------------
 let worker = null;
@@ -57,6 +57,16 @@ export function addMysqlFunctions(db) {
   db.create_function('YEAR', (d) => (d == null ? null : Number(String(d).slice(0, 4))));
   db.create_function('MONTH', (d) => (d == null ? null : Number(String(d).slice(5, 7))));
   db.create_function('DAY', (d) => (d == null ? null : Number(String(d).slice(8, 10))));
+  db.create_function('CONCAT', (...a) => (a.some((x) => x == null) ? null : a.join('')));
+  db.create_function('LEFT', (s, n) => (s == null ? null : String(s).slice(0, n)));
+  db.create_function('RIGHT', (s, n) => (s == null ? null : n <= 0 ? '' : String(s).slice(-n)));
+  db.create_function('CEIL', (x) => (x == null ? null : Math.ceil(x)));
+  db.create_function('CEILING', (x) => (x == null ? null : Math.ceil(x)));
+  db.create_function('FLOOR', (x) => (x == null ? null : Math.floor(x)));
+  db.create_function('REGEXP', (pattern, s) => {
+    if (pattern == null || s == null) return null;
+    try { return new RegExp(pattern, 'i').test(String(s)) ? 1 : 0; } catch { return 0; }
+  });
   db.create_function('DATEDIFF', (a, b) => (a == null || b == null ? null : Math.round((toDate(a) - toDate(b)) / 86400000)));
   db.create_function('DATE_FORMAT', (d, f) => {
     if (d == null) return null;
@@ -77,11 +87,11 @@ export function loadSql() {
 
 /** Runs a query on a fresh copy of the practice data (so nothing a learner types can break it).
  *  Returns { columns, values } of the last statement, or throws the database error. */
-export async function runQuery(sql) {
+export async function runQuery(sql, data = 'sales') {
   const SQL = await loadSql();
   const db = new SQL.Database();
   try {
-    db.exec(DATASET);
+    db.exec(DATASETS[data].sql);
     addMysqlFunctions(db);
     const res = db.exec(sql);
     return res.length ? res[res.length - 1] : { columns: [], values: [] };

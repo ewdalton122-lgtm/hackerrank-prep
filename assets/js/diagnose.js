@@ -220,14 +220,21 @@ export function compareSql(got, expected, { ordered = false } = {}) {
   if (!sameSet) {
     const i = gotKeys.findIndex((k, idx) => !expKeys.includes(k) || idx < 0);
     const bad = i >= 0 ? got.values[i] : got.values[0];
-    return {
-      ok: false,
-      lead: 'The right number of rows, but some values are different.',
-      steps: [
-        `For example your query returns the row (${bad.map((v) => (v === null ? 'NULL' : v)).join(', ')}), which is not in the expected answer.`,
-        'Check the filter values and spelling, the aggregate (SUM vs COUNT), and which columns you selected.',
-      ],
-    };
+    const sorted = (rows) => rows.map((r) => r.map(String).sort().join('|')).sort().join('\n');
+    if (sorted(got.values) === sorted(expected.values)) {
+      return {
+        ok: false,
+        lead: 'The right values, but the columns are in a different order.',
+        steps: [`Expected column order: ${expected.columns.map((c) => '`' + c + '`').join(', ')}.`, 'Reorder the columns in your `SELECT` to match the task.'],
+      };
+    }
+    const hasNull = bad.some((v) => v === null);
+    const steps = [`For example your query returns the row (${bad.map((v) => (v === null ? 'NULL' : v)).join(', ')}), which is not in the expected answer.`];
+    if (hasNull) steps.push('A `NULL` appeared. Blank values turn math into NULL. Replace them with `COALESCE(column, 0)`, or filter them with `IS NULL` / `IS NOT NULL`.');
+    const close = expected.values.some((e) => e.length === bad.length && e.every((v, k) => String(v) === String(bad[k]) || (typeof v === 'number' && typeof bad[k] === 'number' && Math.abs(v - bad[k]) <= Math.max(0.05, Math.abs(v) * 0.01))));
+    if (close) steps.push('You are very close. Check how many decimal places `ROUND(...)` should keep, and whether a number should be rounded at all.');
+    steps.push('Check the filter values and spelling, the aggregate (SUM vs COUNT), and which columns you selected.');
+    return { ok: false, lead: 'The right number of rows, but some values are different.', steps };
   }
   if (ordered && gotKeys.join('\n') !== expKeys.join('\n')) {
     return {

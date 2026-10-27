@@ -279,6 +279,7 @@ export const sql = [
   },
   {
     id: 'sql-r-bolt',
+    optional: true,
     title: 'Course: SQLBolt lessons 1 to 12',
     minutes: 300,
     blurb: 'Interactive lessons from SELECT through joins, aggregates and subqueries.',
@@ -289,6 +290,7 @@ export const sql = [
   },
   {
     id: 'sql-r-hr1',
+    optional: true,
     title: 'Practice: HackerRank SQL warm-ups',
     minutes: 300,
     blurb: 'Same editor and grader style as an assessment.',
@@ -303,6 +305,7 @@ export const sql = [
   },
   {
     id: 'sql-r-hr2',
+    optional: true,
     title: 'Practice: HackerRank SQL joins and subqueries',
     minutes: 420,
     blurb: 'Harder, multi-table problems. Aim for 3 of 5 in under 20 minutes each.',
@@ -450,6 +453,7 @@ export const sqlAdv = [
   },
   {
     id: 'sqla-r-lemur',
+    optional: true,
     title: 'Course: DataLemur SQL tutorial',
     minutes: 480,
     blurb: 'Date functions, CTEs, window functions, ranking, LEAD and LAG.',
@@ -460,6 +464,7 @@ export const sqlAdv = [
   },
   {
     id: 'sqla-r-prac',
+    optional: true,
     title: 'Practice: ranking and window problems',
     minutes: 420,
     blurb: 'Solve the three core problems unaided in under 20 minutes each.',

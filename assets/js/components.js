@@ -3,7 +3,7 @@ import { getState, update, noteMiss } from './store.js';
 import { esc, inline, feedback, copyText, enableTab, renderBlocks } from './ui.js';
 import { runPython, pythonReady, runQuery } from './runners.js';
 import { explainPyError, diagnosePyTest, diagnoseIo, explainSqlError, compareSql, diagnoseText } from './diagnose.js';
-import { SCHEMA_DOC } from '../../content/sql.js';
+import { DATASETS } from '../../content/sqldata.js';
 
 const getNote = (k) => getState().notes[k] ?? '';
 const setNote = (k, v) => update((s) => { s.notes[k] = v; }, { silent: true });
@@ -212,7 +212,7 @@ export function mountSql(host, item, onPass) {
   host.innerHTML = `
     ${exerciseShell(ex, item)}
     <details class="schema"><summary>Tables in this practice set</summary>
-      <ul>${SCHEMA_DOC.map((t) => `<li><code>${t.table}</code> (${esc(t.cols)}): ${esc(t.note)}</li>`).join('')}</ul>
+      <ul>${DATASETS[ex.data || 'sales'].doc.map((t) => `<li><code>${t.table}</code> (${esc(t.cols)}): ${esc(t.note)}</li>`).join('')}</ul>
     </details>
     <textarea class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query">${esc(getNote(key) || ex.starter)}</textarea>
     <div class="row" style="margin:12px 0">
@@ -266,7 +266,7 @@ export function mountSql(host, item, onPass) {
         fail();
       } else {
         let got;
-        try { got = await runQuery(ta.value); }
+        try { got = await runQuery(ta.value, ex.data); }
         catch (err) {
           const d = explainSqlError(err.message || err);
           fbbox.innerHTML = feedback('bad', d.lead, d.steps, `<p class="small muted">Database message: <code>${esc(err.message || err)}</code></p>`);
@@ -275,7 +275,7 @@ export function mountSql(host, item, onPass) {
         }
         if (got) {
           resbox.innerHTML = `<h3>Your result</h3>${table(got)}`;
-          const expected = await runQuery(ex.solution);
+          const expected = await runQuery(ex.solution, ex.data);
           const cmp = compareSql(got, expected, { ordered: ex.ordered });
           if (cmp.ok) {
             fbbox.innerHTML = feedback('ok', 'Correct. Your result matches the expected answer.', ['Tip: write the same query again tomorrow without looking. Recall is what sticks.']);
