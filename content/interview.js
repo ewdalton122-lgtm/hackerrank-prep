@@ -1,5 +1,5 @@
-// Stage 10: interview preparation. Optional and not part of the daily study target:
-// the assessment is the gate, the interview comes after.
+// Stage 10: interview preparation. Optional and not part of the daily study target.
+// The usual order is interview first, then the HackerRank test, so use this when an interview is scheduled.
 const w = (id, title, minutes, blurb, blocks, ex, quiz) => ({ id, title, minutes, blurb, blocks, ...(quiz ? { quiz } : {}), ...(ex ? { exercise: { kind: 'written', ...ex } } : {}) });
 
 export const interview = [
@@ -50,6 +50,50 @@ export const interview = [
     ],
     model: '1. Problem. Our support team handled about 800 order-status questions a week by hand. Customers waited hours, and agents had no time for complex cases.\n\n2. Why this approach. I considered a better FAQ page and a rules-based chatbot, but neither could look up a live order. A service agent that reads order data could answer directly, so I chose that.\n\n3. How it works. The agent has instructions in plain language, one action that looks up an order by number, and a guardrail: refunds and anything about billing disputes escalate to a person.\n\n4. Demo. I will ask it "Where is my order 1042?" and show it answer, then ask for a refund and show the handoff.\n\n5. Result. In a two-week pilot it fully resolved about 55 percent of order-status chats and cut average wait from hours to seconds. I would track resolution rate and customer satisfaction.\n\n6. Next. I would add returns, review wrong answers weekly, and change my first draft by narrowing the agent to fewer topics sooner.',
   }),
+
+  w('iv-ds', 'Present an Agentforce project the Deployment Strategist way', 60, 'A Deployment Strategist owns the business outcome, not just the build. Tell the project that way.', [
+    { t: 'p', text: 'Panels for this role often ask you to present an Agentforce project you are proud of, then take questions. The role is the executive relationship owner: you run design workshops, scope the solution, and own adoption and delivery. So the same project should be told as a **business story**, with the technical build in a supporting role.' },
+    { t: 'h', text: 'Tell it in five parts' },
+    { t: 'list', items: [
+      '**The business problem:** who was hurting, what it cost (hours, dollars, customers), and how you know.',
+      '**The stakeholders:** who sponsored it, who objected, who had to change how they work, and how you brought them along.',
+      '**The scoping decisions:** what you chose to build first and what you deliberately left out. This is where strategic judgment shows.',
+      '**Adoption:** how people started using it, what stalled, and what you did about it.',
+      '**The outcome:** a measure that moved, or the measure you would track, plus what you would change next time.',
+    ] },
+    { t: 'analogy', text: 'It is a deal review, not a demo. The audience wants to know why this was the right problem, who had to say yes, and what the return was.' },
+    { t: 'h', text: 'Expect questions on ambiguity' },
+    { t: 'p', text: 'Descriptions of this role mention testing **strategic thinking under ambiguity**. Be ready for: "What if the customer cannot agree on the priority?", "What did you not know at the start, and how did you find out?", "How do you decide when a project is done?" Answer with how you reduce the uncertainty, not with a guess.' },
+    { t: 'warn', text: 'The exact interview format is not confirmed. Ask your recruiter how long it is, who is on the panel, and whether you are expected to present.' },
+  ], null, [
+    {
+      q: 'You are asked to present an Agentforce project to a Deployment Strategist panel. Which opening is strongest?',
+      options: [
+        'A tour of the agent\'s topics, actions and prompts, in build order',
+        'The business problem, who was affected, and what it was costing them',
+        'The list of every feature you shipped',
+        'The technical architecture diagram',
+      ],
+      answer: 1,
+      explain: [
+        'This is the build-first story. It is useful later, but it does not show ownership of the outcome.',
+        'Correct. The role owns the business result, so start with the problem and its cost.',
+        'A feature list says what you did, not why it mattered.',
+        'The architecture is supporting material. Lead with the business case.',
+      ],
+    },
+    {
+      q: 'A panelist asks, "What did you choose not to build?" What are they testing?',
+      options: ['Whether you ran out of time', 'Your scoping judgment', 'Your memory of the backlog', 'Whether you can code'],
+      answer: 1,
+      explain: [
+        'It is a judgment question, not a schedule question.',
+        'Correct. Deciding what to leave out is a core part of scoping, and it shows strategic thinking.',
+        'They want a reasoned choice, not a list.',
+        'This is a strategy question, not a coding one.',
+      ],
+    },
+  ]),
 
   w('iv-exec', 'Executive conversation: adoption is stalling', 55, 'Diagnose before you prescribe, then agree on one measurable next step.', [
     { t: 'p', text: 'Strategist-style questions test how you handle senior people when something is not working. The pattern: **listen, diagnose with questions or data, offer options, recommend one, agree on a next step.**' },

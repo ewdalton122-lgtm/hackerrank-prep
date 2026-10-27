@@ -20,16 +20,17 @@ const mockItem = (id, title, minutes, blurb) => ({ id, title, minutes, blurb, mo
 
 const codingStrategy = {
   id: 'cd-strategy',
-  title: 'Coding strategy: bank points first',
+  title: 'Coding strategy: pass every case',
   minutes: 30,
-  blurb: 'Read constraints, write the simple version, submit, then improve.',
+  blurb: 'Read constraints, write the simple version, submit, then improve until every case passes.',
   blocks: [
-    { t: 'p', text: 'Because each hidden test case has its own points, the best order of work is predictable:' },
+    { t: 'p', text: 'Candidates report that coding is close to all or nothing, so the goal is a solution that passes every test case. The best order of work is still predictable:' },
     { t: 'list', items: [
       '**Read the problem for 3 minutes.** Note the input format, the output format and the **constraints** (for example n up to 100,000).',
       '**Work the sample by hand.** Be able to say, in plain words, how you get the sample output.',
-      '**Write the simplest correct version and submit it.** It banks the easy cases even if it is slow.',
+      '**Write the simplest correct version and submit it.** It is your fallback, even if it is slow.',
       '**Then optimize** if the constraints are large, and resubmit. Only the last submission counts.',
+      '**Chase every failing case.** Partial passes earn very little, so finishing the last edge case is worth more than anything else.',
       '**Test edges:** empty input, one item, duplicates, zeros, negatives.',
     ] },
     { t: 'analogy', text: 'Constraints are like a term sheet: n up to 1,000 means a simple double loop is fine; n up to 100,000 means you need a sort or a dictionary.' },
@@ -67,16 +68,7 @@ export const STAGES = [
     items: orient,
   },
   {
-    id: 's1', num: 1, title: 'Python basics', roles: ['ds', 'fde'],
-    summary: 'Variables, decisions, loops, text, dictionaries and functions. Enough to bank the easy test cases.',
-    items: (() => {
-      const core = python.filter((i) => !i.optional);
-      const extras = python.filter((i) => i.optional);
-      return [...core, ...pythonMore, ...extras];
-    })(),
-  },
-  {
-    id: 's2', num: 2, title: 'SQL foundations', roles: ['ds', 'fde'],
+    id: 's2', num: 1, title: 'SQL foundations', roles: ['ds', 'fde'],
     summary: 'Filtering, text, NULLs, grouping and joins, with graded practice on several small databases. The SQL version of what you already do in Excel.',
     items: (() => {
       const by = Object.fromEntries([...sql, ...sqf].map((i) => [i.id, i]));
@@ -86,12 +78,12 @@ export const STAGES = [
     })(),
   },
   {
-    id: 's3', num: 3, title: 'SQL advanced', roles: ['ds', 'fde'],
+    id: 's3', num: 2, title: 'SQL advanced', roles: ['ds', 'fde'],
     summary: 'Window functions, ranking, running totals and date functions.',
     items: [...sqlAdv.slice(0, 3), ...sqa.slice(0, 3), ...sqlDrills, ...sqa.slice(3), ...sqlAdv.slice(3)],
   },
   {
-    id: 's4', num: 4, title: 'Prompt engineering', roles: ['ds', 'fde'],
+    id: 's4', num: 3, title: 'Prompt engineering', roles: ['ds', 'fde'],
     summary: 'Write prompts whose output matches an exact expected answer.',
     items: (() => {
       const by = Object.fromEntries([...prompts, ...promptMore, ...promptDrills2, ...promptDiagnose].map((i) => [i.id, i]));
@@ -102,13 +94,22 @@ export const STAGES = [
     })(),
   },
   {
-    id: 's5', num: 5, title: 'System design and stakeholders', roles: ['ds', 'fde'],
+    id: 's5', num: 4, title: 'System design and stakeholders', roles: ['ds', 'fde'],
     summary: 'The vocabulary and judgment behind the multiple-choice questions, then structured written replies.',
     items: (() => {
       const core = systems.filter((i) => !i.optional && !i.id.startsWith('sk-') && i.id !== 'sd-mcq');
       const skills = systems.filter((i) => i.id.startsWith('sk-'));
       const technique = systems.find((i) => i.id === 'sd-mcq');
       return [...core, ...mcqBank, technique, ...skills, ...writtenMore, ...systems.filter((i) => i.optional)];
+    })(),
+  },
+  {
+    id: 's1', num: 5, title: 'Python basics', roles: ['ds', 'fde'],
+    summary: 'Variables, decisions, loops, text, dictionaries and functions. The foundation for the coding section, which is worth about a third of the points.',
+    items: (() => {
+      const core = python.filter((i) => !i.optional);
+      const extras = python.filter((i) => i.optional);
+      return [...core, ...pythonMore, ...extras];
     })(),
   },
   {
@@ -136,7 +137,7 @@ export const STAGES = [
         { t: 'h', text: 'Running totals: keep a score as you go' },
         { t: 'p', text: 'Instead of re-adding the list every time, keep a `total` and a `count` as you loop. The average of everything so far is `total / count`. Update them **after** you compare the current item.' },
         { t: 'code', text: 'total = 0\nfor i, x in enumerate(nums):\n    if i > 0 and x > total / i:\n        print(x, "beats the average of the items before it")\n    total += x' },
-        { t: 'tip', text: 'Write the simple version first and submit it, then improve. Each hidden test case earns its own points.' },
+        { t: 'tip', text: 'Write the simple version first and submit it, then improve until every case passes.' },
       ])), optional: true },
       { ...(r('cw-8', 'Checkpoint: the 13 representative problems', 300, 'A representative set of 13 problems. If you can solve most of these without help, your coding is in good shape.', [
         { label: '1. Solve Me First', url: 'https://www.hackerrank.com/challenges/solve-me-first/problem', use: 'Functions and return' },
@@ -157,10 +158,12 @@ export const STAGES = [
   },
   {
         id: 's7', num: 7, title: 'Exam simulation', roles: ['ds', 'fde'],
-    summary: 'Timed mock exams inside this site, scored by skill area, until you clear the pass mark with room to spare. The real HackerRank sample test is the one outside item worth doing.',
+    summary: 'Timed exam replicas inside this site, shaped like the real exam and scored out of 170 points by skill area, until you clear the pass mark with room to spare. The real HackerRank sample test is the one outside item worth doing.',
     items: [
-      mockItem('mock-1', 'Mock exam 1: full timed practice', 90, 'Twelve multiple-choice, two SQL, two coding, one prompt drill and one written reply, scored by skill area.'),
-      mockItem('mock-2', 'Mock exam 2: a different set', 90, 'Take it after reviewing Mock 1. Aim to beat the pass mark by at least 10 points.'),
+      mockItem('mock-1', 'Exam replica 1: full timed practice', 90, 'Four multiple choice, one SQL, one coding, one prompt and one written reply, scored out of 170 points like the real exam as candidates describe it.'),
+      mockItem('mock-2', 'Exam replica 2: a different set', 90, 'Take it after reviewing replica 1. Aim to beat the pass mark by at least 10 points.'),
+      opt(mockItem('mock-3', 'Exam replica 3: extra practice', 90, 'Same shape, new questions. Use it if you want another full attempt.')),
+      opt(mockItem('mock-4', 'Exam replica 4: extra practice', 90, 'Same shape, new questions.')),
       opt(mockItem('mock-sprint', 'Review sprint (as many times as you like)', 20, 'Twelve multiple-choice questions drawn from lessons you have studied, weighted toward the ones you got wrong.')),
       r('sim-1', 'Retake the HackerRank sample test', 45, 'Compare with your first attempt.', [
         { label: 'HackerRank sample test', url: 'https://www.hackerrank.com/test/sample', use: 'Full screen, timed, no notes.' },
@@ -226,7 +229,7 @@ export const STAGES = [
   },
   {
     id: 's10', num: 10, title: 'Interview preparation', roles: ['ds', 'fde'], optional: true,
-    summary: 'After the assessment: stories, presenting a build, and executive conversations. Not part of your daily study target.',
+    summary: 'Stories, presenting an Agentforce project the Deployment Strategist way, and executive conversations. The usual order is interview first, then the HackerRank test, so do these when your interview is scheduled. Not part of your daily study target.',
     items: interview,
   },
 ];

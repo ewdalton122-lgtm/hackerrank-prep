@@ -267,7 +267,105 @@ const m2 = [
     'Thank you both. Lead scoring and case summaries are each valuable, and I want to be clear about how we choose.\n\nThe constraint is capacity: we can deliver only one of them by the committed date, and the other would follow.\n\nTwo options. Option A: deliver lead scoring first and case summaries four weeks later. Option B: deliver case summaries first and lead scoring four weeks later.\n\nI recommend we decide using one measure both of you agree on, such as expected hours saved or revenue protected. On the numbers I have today, I would start with case summaries because the volume is higher, but I am open to your data.\n\nNext step: can we meet for 30 minutes this week? I will send each of you a one-page comparison by Wednesday.'),
 ];
 
-export const MOCKS = [
-  { id: 'mock-1', title: 'Mock exam 1', minutes: 90, blurb: '12 multiple-choice, 2 SQL, 2 coding, 1 prompt drill and 1 written reply.', questions: m1 },
-  { id: 'mock-2', title: 'Mock exam 2', minutes: 90, blurb: 'A different set, same shape. Take it after you have studied what Mock 1 showed you.', questions: m2 },
+// ---------------------------------------------------------------- Mock 3 and 4: new multiple-choice, plus the leftover SQL and coding problems
+const m3 = [
+  Q('m3-q1', 'sd-async', 'Why do software-as-a-service vendors run many customers on one shared platform?', 0,
+    'Shared infrastructure lowers cost, and every customer gets improvements at the same time.', 'One platform to run and update is far cheaper than many separate copies.', [
+      ['Each customer gets its own private copy of the code.', 'That is the opposite of multi-tenancy. Separate copies are costly to update.'],
+      ['It lets customers see each other\'s data automatically.', 'Tenants are isolated from each other. Sharing infrastructure never means sharing data.'],
+      ['It removes the need for backups.', 'Shared platforms still need backups, usually more carefully.'],
+    ]),
+  Q('m3-q2', 'sd-scale', 'A vendor promises 99.9% uptime over a 30-day month. Roughly how much downtime does that allow?', 2,
+    'About 43 minutes.', 'A 30-day month has 43,200 minutes, and 0.1% of that is about 43.', [
+      ['About 7 hours.', 'That is roughly what 99% uptime allows, one nine fewer.'],
+      ['About 4 minutes.', 'That is roughly 99.99% uptime, one nine more.'],
+      ['About 3 days.', 'That would be about 90% uptime.'],
+    ]),
+  Q('m3-q3', 'sd-async', 'A user clicks Export and the report takes ten minutes to build. Which design keeps the app responsive?', 1,
+    'Queue it as a background job and tell the user when it is ready.', 'Long work belongs off the request path, with a notification when it finishes.', [
+      ['Keep the user on a loading page until it finishes.', 'Browsers and servers time out, and the user is stuck.'],
+      ['Make the browser re-send the request every second.', 'That multiplies the load and may start ten reports.'],
+      ['Raise the timeout to an hour.', 'It hides the problem and ties up a server connection the whole time.'],
+    ]),
+  Q('m3-q4', 'sd-reliab', 'Why test a change in a sandbox before it goes to production?', 3,
+    'A sandbox is a safe copy where mistakes cannot touch real customers or data.', 'Finding the problem in the copy is cheap. Finding it in production is not.', [
+      ['Sandboxes run faster than production.', 'Speed is not the reason.'],
+      ['Production does not allow changes.', 'Production changes constantly. The point is to change it safely.'],
+      ['Sandboxes keep more data.', 'They usually hold less, often a masked sample.'],
+    ]),
+  PE('m3-pe1', 'pe-dx-extra', 'Extract the price',
+    'Each input is a sentence containing exactly one price in dollars, such as $1,250.50. Output only the amount as a plain number: no dollar sign and no thousands commas. Keep any cents as written.',
+    [
+      { input: 'The total comes to $1,250.50 today', expected: '1250.50' },
+      { input: 'It only costs $9', expected: '9' },
+      { input: 'Please wire $12,000,000 by Friday', expected: '12000000' },
+      { input: 'A refund of $0.99 was issued', expected: '0.99' },
+    ]),
+  WR('m3-w1', 'sk-date', 'The date you cannot hit',
+    'A customer executive expects go-live on March 1. Your honest estimate is March 22, because the customer\'s own data cleanup is running late. Write your reply to the executive (about 100 to 150 words).',
+    [
+      rb.goal(/goal|understand|appreciate|thank|important|march 1|momentum|expect/i),
+      rb.fact('States the real date and the reason, neutrally', /march 22|22|estimate|data|cleanup|clean-up|dependency|late/i),
+      rb.options, rb.rec, rb.next,
+    ],
+    'Thank you for being clear that March 1 matters. I understand why: your team is counting on it.\n\nThe honest picture is that March 22 is our realistic date. The reason is the data cleanup, which is running behind and which the agent depends on.\n\nThere are two options. Option one is to hold March 1 with a smaller first release, covering only the questions that do not need the cleaned data. Option two is a single full launch on March 22.\n\nI recommend option one, because it keeps the date you promised and gets real feedback early, while the full version follows on March 22.\n\nCan we spend 20 minutes this week with your data lead to confirm the cleanup dates and the smaller scope?'),
 ];
+
+const m4 = [
+  Q('m4-q1', 'sd-reliab', 'What is the difference between an SLO and an SLA?', 1,
+    'An SLO is an internal target. An SLA is the promise made to the customer, often with penalties.', 'Teams set SLOs a little tighter than the SLA so they have room to react.', [
+      ['They are two names for the same thing.', 'They are related but different: one is a target, the other a contract.'],
+      ['An SLA is internal and an SLO is the customer contract.', 'That has them reversed.'],
+      ['Both only describe security rules.', 'They describe service levels such as uptime and response time.'],
+    ]),
+  Q('m4-q2', 'sd-async', 'Which statement about caching is true?', 2,
+    'It makes repeated reads faster, but the answer can be out of date.', 'A cache keeps a copy. The copy can go stale until it is refreshed.', [
+      ['It always shows the latest data.', 'Not unless it is refreshed every time, which defeats the purpose.'],
+      ['It is used only to speed up writes.', 'Caches mainly speed up repeated reads.'],
+      ['It removes the need for a database.', 'A cache sits in front of the source of truth. It does not replace it.'],
+    ]),
+  Q('m4-q3', 'sd-api', 'An external system needs to know when an order is created. Which approach avoids constant checking?', 0,
+    'A webhook: your system calls theirs the moment an order is created.', 'Event-driven notification means nobody has to keep asking.', [
+      ['Polling the order table every second.', 'That is the constant checking you are trying to avoid.'],
+      ['Re-downloading the whole order table every minute.', 'Wasteful, and still delayed by up to a minute.'],
+      ['Asking a person to copy new orders across.', 'Manual, slow and error-prone.'],
+    ]),
+  Q('m4-q4', 'sd-security', 'A new analyst needs to see support cases only. What access should they get?', 3,
+    'Access to just the case data they need, which is the least-privilege rule.', 'Grant the minimum needed for the job, and widen it only when there is a reason.', [
+      ['Administrator access, so they never have to ask again.', 'Over-broad access is the main way data leaks.'],
+      ['A shared login used by the whole team.', 'Shared logins make it impossible to see who did what.'],
+      ['No access, and screenshots by email.', 'Screenshots leak data too and are painful to maintain.'],
+    ]),
+  PE('m4-pe1', 'pe-dx-format', 'Classify a review',
+    'Each input is a short product review. Output exactly one word: POSITIVE if it is clearly positive, NEGATIVE if it is clearly negative, or MIXED if it contains both praise and complaint.',
+    [
+      { input: 'Love it, works perfectly every day', expected: 'POSITIVE' },
+      { input: 'Broke after two days, a total waste of money', expected: 'NEGATIVE' },
+      { input: 'The screen is gorgeous but the battery is awful', expected: 'MIXED' },
+      { input: 'Fast shipping and exactly as described', expected: 'POSITIVE' },
+    ]),
+  WR('m4-w1', 'sk-incident', 'The agent gave a wrong answer',
+    'The customer\'s service agent told a shopper the wrong refund policy, and the customer\'s director has emailed you, upset. Write your reply to the director (about 100 to 150 words).',
+    [
+      { id: 'goal', label: 'Acknowledges the concern and takes it seriously first', test: /sorry|apolog|understand|concern|thank you for|seriously|frustrat/i },
+      { id: 'contain', label: 'Says what happened and what is being done right now', test: /fixed|paused|corrected|reviewed|rolled back|turned off|checked|investigat|cause/i },
+      { id: 'prevent', label: 'Explains how a repeat will be prevented', test: /prevent|test|guardrail|review|monitor|going forward|so that it does not|so it does not|check/i },
+      rb.next,
+    ],
+    'Thank you for raising this straight away, and I am sorry for the confusion it caused your customer. A wrong refund answer is serious and I understand why you are concerned.\n\nHere is what we know. The agent was using an out-of-date version of the policy. We have corrected it and paused refund answers until we have checked them.\n\nTo prevent a repeat, we will add refund questions to our test set and monitor those answers weekly, so any gap shows up before a customer sees it.\n\nNext step: I will send you a written summary by Thursday, and I would like a 20-minute call this week to confirm the checks you want in place.'),
+];
+
+const pick = (arr, ids) => ids.map((id) => arr.find((q) => q.id === id));
+
+const SHAPE = 'Built to match the exam as candidates describe it: 4 multiple choice, 1 SQL problem, 1 coding problem, 1 prompt-engineering problem and 1 written reply, scored out of 170 points. About 90 minutes.';
+
+export const MOCKS = [
+  { id: 'mock-1', title: 'Exam replica 1', minutes: 90, blurb: SHAPE, questions: [...pick(m1, ['m1-q9', 'm1-q10', 'm1-q8', 'm1-q12']), ...pick(m1, ['m1-sql1', 'm1-py1', 'm1-pe1', 'm1-w1'])] },
+  { id: 'mock-2', title: 'Exam replica 2', minutes: 90, blurb: 'A different set, same shape. Take it after you have studied what replica 1 showed you.', questions: [...pick(m2, ['m2-q9', 'm2-q10', 'm2-q11', 'm2-q12']), ...pick(m2, ['m2-sql1', 'm2-py1', 'm2-pe1', 'm2-w1'])] },
+  { id: 'mock-3', title: 'Exam replica 3', minutes: 90, blurb: 'Extra practice, same shape, new questions.', questions: [...m3.slice(0, 4), ...pick(m1, ['m1-sql2', 'm1-py2']), m3[4], m3[5]] },
+  { id: 'mock-4', title: 'Exam replica 4', minutes: 90, blurb: 'Extra practice, same shape, new questions.', questions: [...m4.slice(0, 4), ...pick(m2, ['m2-sql2', 'm2-py2']), m4[4], m4[5]] },
+];
+
+// Multiple-choice questions not used in a replica. The review sprint draws on these as well.
+const used = new Set(MOCKS.flatMap((k) => k.questions.map((q) => q.id)));
+export const SPARE = [...m1, ...m2].filter((q) => q.type === 'mcq' && !used.has(q.id));

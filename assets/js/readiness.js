@@ -1,14 +1,15 @@
 // Readiness: a rough, honest picture of where you stand in each skill area.
 // It is an estimate from your own practice (completion and first-try accuracy), not a prediction.
-// Study weights are deliberately simple. Adjust them after you learn how the assessment is weighted.
+// Weights are the reported points for each section of the exam (about 170 in total), from candidates who have taken it.
+// They are a planning model, not an official breakdown.
 import { itemsFor, ROLES } from '../../content/curriculum.js';
 
 export const SECTIONS = [
-  { id: 'sql', name: 'SQL', weight: 3, stages: ['s2', 's3'], tip: 'Work the SQL drills until joins, grouping and window functions feel automatic.' },
-  { id: 'pe', name: 'Prompt engineering', weight: 3, stages: ['s4'], tip: 'Rewrite the prompt until the output matches exactly, with no extra words.' },
-  { id: 'code', name: 'Coding', weight: 3, stages: ['s1', 's6', 's8', 's9'], tip: 'Bank the easy test cases first, then improve speed.' },
-  { id: 'mcq', name: 'Multiple choice', weight: 1.5, stages: ['s0', 's5'], tip: 'Read why each wrong answer is wrong. That is where the points are.', skip: (i) => i.id.startsWith('sk-') },
-  { id: 'written', name: 'Written reply', weight: 0.5, stages: ['s5'], tip: 'Use the five-part structure and re-read against the checklist.', only: (i) => i.id.startsWith('sk-') },
+  { id: 'sql', name: 'SQL', weight: 50, stages: ['s2', 's3'], tip: 'Work the SQL drills until joins, grouping and window functions feel automatic.' },
+  { id: 'pe', name: 'Prompt engineering', weight: 50, stages: ['s4'], tip: 'Rewrite the prompt until the output matches exactly, with no extra words.' },
+  { id: 'code', name: 'Coding', weight: 50, stages: ['s1', 's6', 's8', 's9'], tip: 'Submit a simple version first, then keep going until every test case passes.' },
+  { id: 'mcq', name: 'Multiple choice', weight: 16, stages: ['s0', 's5'], tip: 'Read why each wrong answer is wrong. That is where the points are.', skip: (i) => i.id.startsWith('sk-') },
+  { id: 'written', name: 'Written reply', weight: 4, stages: ['s5'], tip: 'Use the five-part structure and re-read against the checklist.', only: (i) => i.id.startsWith('sk-') },
 ];
 
 const misses = (p) => Object.values(p?.missed || {}).reduce((a, b) => a + b, 0);

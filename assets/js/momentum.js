@@ -8,16 +8,16 @@ import { confetti, xpPop, xpGain, celebrate } from './fx.js';
 
 // What you can actually do once each stage is finished. Plain statements, no inflated claims.
 const CAN = {
-  0: ['You know the rules of the game', 'how the assessment is scored and where the points are.'],
-  1: ['You can read and write short Python programs', 'variables, decisions, loops, text, dictionaries and functions. Roughly the level of someone who has finished an introductory programming module.'],
-  2: ['You can pull answers out of a database', 'filtering, joining several tables, grouping and handling NULLs. This is the SQL most business analysts use every day.'],
-  3: ['Your SQL now goes beyond most analysts', 'rankings, running totals, previous-row comparisons and date logic using window functions.'],
-  4: ['You can make an AI return an exact, checkable answer', 'a skill most professionals have never practised on purpose.'],
-  5: ['You can reason about system trade-offs', 'and write structured replies to stakeholders, which covers the multiple-choice and written sections.'],
-  6: ['You can solve exam-style coding problems end to end', 'read the input, build the answer, print it, and handle the edge cases.'],
-  7: ['You have held your accuracy under the clock', 'you are ready to book the real assessment.'],
-  8: ['You can reason about efficiency', 'arrays, hash maps, sorting, binary search and Big-O.'],
-  9: ['You can solve sort-then-choose problems', 'greedy choices and priority queues.'],
+  s0: ['You know the rules of the game', 'how the assessment is scored and where the points are.'],
+  s1: ['You can read and write short Python programs', 'variables, decisions, loops, text, dictionaries and functions. Roughly the level of someone who has finished an introductory programming module.'],
+  s2: ['You can pull answers out of a database', 'filtering, joining several tables, grouping and handling NULLs. This is the SQL most business analysts use every day.'],
+  s3: ['Your SQL now goes beyond most analysts', 'rankings, running totals, previous-row comparisons and date logic using window functions.'],
+  s4: ['You can make an AI return an exact, checkable answer', 'a skill most professionals have never practised on purpose.'],
+  s5: ['You can reason about system trade-offs', 'and write structured replies to stakeholders, which covers the multiple-choice and written sections.'],
+  s6: ['You can solve exam-style coding problems end to end', 'read the input, build the answer, print it, and handle the edge cases.'],
+  s7: ['You have held your accuracy under the clock', 'you are ready to book the real assessment.'],
+  s8: ['You can reason about efficiency', 'arrays, hash maps, sorting, binary search and Big-O.'],
+  s9: ['You can solve sort-then-choose problems', 'greedy choices and priority queues.'],
 };
 
 const HEAD = [
@@ -77,7 +77,7 @@ function pathInfo(s) {
 
 function skillNote(info) {
   if (!info.lastDone) return 'You are at the starting line. This path assumes zero experience, so nobody here is behind.';
-  const [a, b] = CAN[info.lastDone.st.num] || ['You are making real progress', 'keep going.'];
+  const [a, b] = CAN[info.lastDone.st.id] || ['You are making real progress', 'keep going.'];
   return `${a}: ${b}`;
 }
 
@@ -175,7 +175,7 @@ function snap(s) {
   return {
     pct: plan.pct, xp, level: levelOf(xp).level,
     done: new Set(Object.entries(s.progress).filter(([, p]) => p.done).map(([id]) => id)),
-    stages: new Set(info.rows.filter((r) => r.complete).map((r) => r.st.num)),
+    stages: new Set(info.rows.filter((r) => r.complete).map((r) => r.st.id)),
     studied: plan.studiedToday, goal: plan.perDay, day: ymd(), info,
   };
 }
@@ -195,13 +195,13 @@ function check() {
   if (newlyDone.length > 3 || cur.pct < before.pct || cur.xp < before.xp) return;
 
   const gain = cur.xp - before.xp;
-  const stageDone = [...cur.stages].find((n) => !before.stages.has(n));
+  const stageDone = [...cur.stages].find((id) => !before.stages.has(id));
   const crossed = MILESTONES.filter(([at]) => before.pct < at && cur.pct >= at).pop();
   const goalHit = before.goal > 0 && before.studied < before.goal && cur.studied >= cur.goal && cur.goal > 0;
 
   if (stageDone !== undefined || crossed) {
     const [a, b] = CAN[stageDone] || [];
-    const stage = STAGES.find((st) => st.num === stageDone);
+    const stage = STAGES.find((st) => st.id === stageDone);
     celebrate({
       kicker: stage ? `Stage ${stage.num} complete` : `${cur.pct}% of the path`,
       title: crossed ? crossed[1] : `${stage.title.replace(/ \(.*\)/, '')} done`,

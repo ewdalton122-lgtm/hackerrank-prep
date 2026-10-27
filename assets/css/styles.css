@@ -351,3 +351,4 @@ li .extl{margin:-2px 0 8px 52px}
 .hbar .tick.end em{left:auto;right:-2px;transform:none}
 .hero-chips{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 .hbar{margin-bottom:30px}
+table.res th{white-space:nowrap}

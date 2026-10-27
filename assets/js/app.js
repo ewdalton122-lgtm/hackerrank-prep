@@ -1,4 +1,4 @@
-import { computeReadiness, pct } from './readiness.js';
+import { computeReadiness, pct, SECTIONS } from './readiness.js';
 import { REFERENCE } from '../../content/reference.js';
 import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
 import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/curriculum.js';
@@ -58,8 +58,8 @@ function profileForm(existing, submitLabel) {
       ${Object.entries(ROLES).map(([k, r]) => `
         <label class="choice"><input type="radio" name="role" value="${k}" ${p.role === k ? 'checked' : ''}>
           <span>${r.name}<small>${k === 'ds'
-            ? `${r.bar}% pass mark. Focus: SQL, prompt engineering, system design and stakeholder skills, plus enough Python to bank the easy coding points.`
-            : `${r.bar}% pass mark. Adds the Patterns and Greedy/Heaps stages for harder coding questions.`}</small></span></label>`).join('')}
+            ? `${r.bar}% pass mark, about 102 of 170 points. SQL and prompt engineering are 100 of those points and the quickest to learn, so they come first. Coding is the third big section and your safety net.`
+            : `${r.bar}% pass mark, about 119 of 170 points. That realistically means all three big sections (SQL, prompts and coding), so this path adds the Patterns and Greedy/Heaps stages.`}</small></span></label>`).join('')}
       <label class="field" style="margin-top:18px">When do you want to take the assessment?
         <span class="hint">Pick a realistic date. You can change it any time.</span>
         <input type="date" name="examDate" value="${esc(p.examDate)}" min="${tomorrow}" required>
@@ -212,7 +212,7 @@ function viewRoadmap() {
       const done = st.items.filter((i) => s.progress[i.id]?.done).length;
       const mins = st.items.reduce((a, i) => a + i.minutes, 0);
       const pct = Math.round((done / st.items.length) * 100);
-      return `<div class="card"><div class="stagehead"><h2>Stage ${st.num}: ${esc(st.title)}${st.optional ? ' ' + pill('After the assessment', 'gray') : ''}</h2><span class="muted small">${done}/${st.items.length} done &middot; ${fmtMin(mins)}</span></div>
+      return `<div class="card"><div class="stagehead"><h2>Stage ${st.num}: ${esc(st.title)}${st.optional ? ' ' + pill('Optional', 'gray') : ''}</h2><span class="muted small">${done}/${st.items.length} done &middot; ${fmtMin(mins)}</span></div>
         <p class="muted">${esc(st.summary)}</p><div class="bar ${pct === 100 ? 'ok' : ''}" style="margin-bottom:8px"><i style="width:${pct}%"></i></div>
         <ul class="items">${st.items.map((i) => itemRow({ ...i, noStage: true }, next?.id === i.id)).join('')}</ul></div>`;
     }).join('')}
@@ -314,13 +314,23 @@ function viewReadiness() {
     ${f && r.enoughData ? `<div class="card"><h2>Best use of your next session</h2>
       <p><b>${esc(f.name)}</b> has the most room to grow (${pct(f.readiness)} ready). ${esc(f.tip)}</p>
       ${f.nextItem ? `<a class="btn primary" href="#/item/${f.nextItem.id}">Next in ${esc(f.name)}: ${esc(f.nextItem.title)}</a>` : '<p class="muted">Everything in this area is done. Redo the review list below.</p>'}</div>` : ''}
+    ${(() => {
+      const total = SECTIONS.reduce((x, y) => x + y.weight, 0);
+      const need = Math.ceil((role.bar / 100) * total);
+      const est = Math.round(r.sections.reduce((x, y) => x + y.weight * y.readiness, 0));
+      const big = r.sections.filter((x) => x.weight >= 50);
+      return `<div class="card"><h2>Where the points are</h2>
+        <p>Candidates who have taken the exam describe about <b>${total} points</b>. For ${esc(role.name)} you need about <b>${need}</b> (${role.bar}%).</p>
+        <div class="scroll"><table class="res"><thead><tr><th>Section</th><th>Points</th><th>Your estimate</th></tr></thead><tbody>${r.sections.map((x) => `<tr><td>${esc(x.name)}</td><td>${x.weight}</td><td>about ${Math.round(x.weight * x.readiness)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${total}</b></td><td><b>about ${est}</b></td></tr></tbody></table></div>
+        <p class="small muted" style="margin-top:8px">${r.enoughData ? `On this estimate you are ${est >= need ? 'above' : 'below'} the ${need} points you need. ` : ''}Each of the ${big.length} big sections is worth about 29% on its own. Two of them plus a few small points reaches 60%, so get two sections fully reliable before you polish the third. The split is one candidate's account, not an official breakdown.</p></div>`;
+    })()}
     <div class="card"><h2>By skill area</h2>
       <div class="secs">${r.sections.map((x) => `<div class="sec">
         <div class="sec-head"><b>${esc(x.name)}</b><span>${pct(x.readiness)}</span></div>
         <div class="bar"><i style="width:${Math.round(x.readiness * 100)}%"></i></div>
         <p class="small muted">${x.doneItems} of ${x.items} items done &middot; ${x.firstTry === null ? 'no practice yet' : `${pct(x.firstTry)} right first time`} &middot; ${x.misses} wrong attempt${x.misses === 1 ? '' : 's'}</p>
       </div>`).join('')}</div>
-      <p class="small muted" style="margin-top:12px">Skill areas are weighted roughly by how much of the assessment they are likely to cover. Prompt engineering, SQL and coding count most. Once you know the real weighting from the hiring manager, tell me and I will update it.</p>
+      <p class="small muted" style="margin-top:12px">Skill areas are weighted by the points candidates report for each section of the exam.</p>
     </div>
     <div class="card"><h2>Redo these</h2>
       ${r.review.length ? `<ul class="items">${r.review.map((x) => `<li><a class="item" href="#/item/${x.item.id}"><span class="t">${esc(x.item.title)}<small>${esc(x.section)} &middot; ${x.n} wrong attempts &middot; ${x.done ? 'finished, but shaky' : 'not finished'}</small></span><span class="m">Retry</span></a></li>`).join('')}</ul>

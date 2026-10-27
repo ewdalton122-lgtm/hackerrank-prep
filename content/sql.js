@@ -291,14 +291,15 @@ export const sql = [
   {
     id: 'sql-r-hr1',
     optional: true,
-    title: 'Practice: HackerRank SQL warm-ups',
+    title: 'Practice: HackerRank Weather Station series (recommended)',
     minutes: 300,
-    blurb: 'Same editor and grader style as an assessment.',
+    blurb: 'A candidate who took the exam recommends the Weather Station series (1 to 18) for SQL practice. Same editor and grader style as the real thing.',
     links: [
       { label: 'HackerRank SQL domain', url: 'https://www.hackerrank.com/domains/sql', use: 'Choose MySQL in the language dropdown.' },
       { label: 'Select All', url: 'https://www.hackerrank.com/challenges/select-all-sql/problem', use: 'Warm-up' },
       { label: 'Revising the Select Query I', url: 'https://www.hackerrank.com/challenges/revising-the-select-query/problem', use: 'Warm-up' },
-      { label: 'Weather Observation Station 1', url: 'https://www.hackerrank.com/challenges/weather-observation-station-1/problem', use: 'Start of a 20-problem series. Finish stations 1 to 12 unaided.' },
+      { label: 'Weather Observation Station 1', url: 'https://www.hackerrank.com/challenges/weather-observation-station-1/problem', use: 'Start of the series. Work through 1 to 18 in order; stations 1 to 12 are the core.' },
+      ...Array.from({ length: 17 }, (_, i) => ({ label: `Weather Observation Station ${i + 2}`, url: `https://www.hackerrank.com/challenges/weather-observation-station-${i + 2}/problem`, use: i + 2 <= 12 ? 'Core' : 'Stretch' })),
       { label: 'Type of Triangle', url: 'https://www.hackerrank.com/challenges/what-type-of-triangle/problem', use: 'Core: CASE WHEN' },
       { label: 'Revising Aggregations: The Count Function', url: 'https://www.hackerrank.com/challenges/revising-aggregations-the-count-function/problem', use: 'Core' },
     ],
@@ -306,7 +307,7 @@ export const sql = [
   {
     id: 'sql-r-hr2',
     optional: true,
-    title: 'Practice: HackerRank SQL joins and subqueries',
+    title: 'Practice: HackerRank SQL joins (Population Census, African Cities)',
     minutes: 420,
     blurb: 'Harder, multi-table problems. Aim for 3 of 5 in under 20 minutes each.',
     links: [

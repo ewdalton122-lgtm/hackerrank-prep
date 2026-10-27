@@ -6,7 +6,7 @@ import { runPython, pythonReady, runQuery } from './runners.js';
 import { compareSql, diagnoseText, explainSqlError } from './diagnose.js';
 import { SECTIONS } from './readiness.js';
 import { DATASETS } from '../../content/sqldata.js';
-import { MOCKS } from '../../content/mocks.js';
+import { MOCKS, SPARE } from '../../content/mocks.js';
 import { itemsFor, ROLES, findItem } from '../../content/curriculum.js';
 
 const RUN_KEY = 'zta.mockrun';
@@ -19,6 +19,7 @@ const TYPES = {
   written: { label: 'Written reply', sec: 'written' },
 };
 const ORDER = ['mcq', 'sql', 'py', 'prompt', 'written'];
+const TOTAL = SECTIONS.reduce((a, s) => a + s.weight, 0); // about 170 points
 
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
 const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -37,6 +38,11 @@ function buildSprint(role, n = 12) {
     const misses = Object.values(p.missed || {}).reduce((a, b) => a + b, 0);
     const weight = (p.done ? 1 : 0.3) + Math.min(misses, 4) * 1.5;
     it.quiz.forEach((q, qi) => pool.push({ w: weight, q: { id: `${it.id}#${qi}`, type: 'mcq', ref: it.id, q: q.q, options: q.options, answer: q.answer, explain: q.explain } }));
+  });
+  SPARE.forEach((q) => {
+    const p = progress[q.ref] || {};
+    const misses = Object.values(p.missed || {}).reduce((a, b) => a + b, 0);
+    pool.push({ w: (p.done ? 1 : 0.3) + Math.min(misses, 4) * 1.5, q });
   });
   const out = [];
   while (out.length < n && pool.length) {
@@ -346,8 +352,9 @@ async function scoreRun(mock, run, qs, role) {
             if (res.timeout) detail = { lead: 'Your code ran for more than 6 seconds.', timeout: true };
             else if (res.error) detail = { lead: `${res.error.type}: ${res.error.msg}`, error: true };
             else {
-              score = res.tests.filter((t) => t.ok).length / q.tests.length;
-              detail = { tests: res.tests.map((t, i) => ({ ok: t.ok, hidden: !!q.tests[i].hidden, edge: q.tests[i].edge, err: t.err?.type })) };
+              // Candidates report that the real coding question is effectively all or nothing, so it is scored that way here.
+              score = res.tests.every((t) => t.ok) ? 1 : 0;
+              detail = { passed: res.tests.filter((t) => t.ok).length, total: q.tests.length, tests: res.tests.map((t, i) => ({ ok: t.ok, hidden: !!q.tests[i].hidden, edge: q.tests[i].edge, err: t.err?.type })) };
             }
           }
         }
@@ -392,6 +399,7 @@ function renderResult(host, res, role) {
   const full = res.mockId !== SPRINT.id;
   const [vt, vk] = full ? verdict(res.pct, bar) : ['Practice only, no pass mark', 'gray'];
   const secName = Object.fromEntries(SECTIONS.map((s) => [s.id, s.name]));
+  const secW = Object.fromEntries(SECTIONS.map((s) => [s.id, s.weight]));
   const lost = [];
   qs.forEach((q) => { if (res.perQ[q.id].score < 1 && q.ref) lost.push(q.ref); });
   const refs = [...new Set(lost)];
@@ -403,11 +411,12 @@ function renderResult(host, res, role) {
     <div class="pagehead"><h1>${esc(mock.title)}: result</h1><p>Finished in ${fmtClock(res.secs)}${res.limit ? ` of ${fmtClock(res.limit)}` : ''}.</p></div>
     <div class="card">
       <div class="stagehead"><h2>Score: ${Math.round(res.pct)}%</h2><span class="badge ${vk}">${vt}</span></div>
+      ${full ? `<p><b>About ${Math.round(res.pct * TOTAL / 100)} of ${TOTAL} points.</b> You need about ${Math.ceil(bar * TOTAL / 100)} for ${esc(ROLES[role]?.name || '')}.</p>` : ''}
       ${full ? `<div class="meter"><i style="width:${Math.round(res.pct)}%"></i><b style="left:${bar}%" title="Pass mark ${bar}%"></b></div>
       <p class="small muted" style="margin-top:8px">The marker is the ${bar}% pass mark for ${esc(ROLES[role]?.name || '')}. Practice scores run a little lower than real-exam scores under pressure, which is why the target is ${bar + 10}% or more, twice in a row.</p>` : ''}
-      <p class="small muted">This is a practice score from questions written for this site. It is an honest signal, not a prediction. Skill areas are weighted with the same rough weights as the Readiness page.</p>
+      <p class="small muted">This is a practice score from questions written for this site. It is an honest signal, not a prediction. Each skill area is worth the points candidates report for the real exam, and coding is scored all or nothing, as reported.</p>
     </div>
-    <div class="card"><h2>By skill area</h2><div class="secs">${Object.entries(res.sectionPct).map(([k, v]) => `<div class="sec"><div class="sec-head"><b>${esc(secName[k] || k)}</b><span>${Math.round(v)}%</span></div><div class="bar"><i style="width:${Math.round(v)}%"></i></div><p class="small muted">${res.sectionN[k]} question${res.sectionN[k] > 1 ? 's' : ''}</p></div>`).join('')}</div>
+    <div class="card"><h2>By skill area</h2><div class="secs">${Object.entries(res.sectionPct).map(([k, v]) => `<div class="sec"><div class="sec-head"><b>${esc(secName[k] || k)}</b><span>${full ? `${Math.round(v * secW[k] / 100)} of ${secW[k]} points` : `${Math.round(v)}%`}</span></div><div class="bar"><i style="width:${Math.round(v)}%"></i></div><p class="small muted">${res.sectionN[k]} question${res.sectionN[k] > 1 ? 's' : ''}</p></div>`).join('')}</div>
       ${weakest && weakest[1] < 100 ? `<p style="margin-top:12px"><b>Weakest area:</b> ${esc(secName[weakest[0]] || weakest[0])}.</p>` : ''}</div>
     ${refs.length ? `<div class="card"><h2>Study these next</h2><p class="muted">Each lesson below covers a question you missed or only partly got.</p><ul class="items">${refs.map((id) => title(id) ? `<li><a class="item" href="#/item/${id}"><span class="t">${esc(title(id))}<small>Lesson in this site</small></span><span class="m">Open</span></a>${(findItem(id)?.links || []).slice(0, 2).map((l) => `<div class="small extl">Also: <a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a></div>`).join('')}</li>` : '').join('')}</ul></div>` : '<div class="card"><h2>Nothing to review</h2><p>You got every question right.</p></div>'}
     <div class="card"><h2>Review every question</h2>${qs.map((q, i) => reviewQ(q, i, res)).join('')}</div>
@@ -430,7 +439,7 @@ function reviewQ(q, i, res) {
   } else if (q.type === 'py') {
     const tests = r.detail.tests ? `<ul class="tests">${r.detail.tests.map((t, k) => `<li class="${t.ok ? 'pass' : 'fail'}"><span>${t.ok ? '&#10003;' : '&#10007;'}</span><div>${t.hidden ? 'Hidden' : 'Visible'} test ${k + 1}${t.ok ? ' passed' : t.err ? ` stopped with ${esc(t.err)}` : ' did not match'}${!t.ok && t.edge ? `. ${esc(t.edge)}` : ''}</div></li>`).join('')}</ul>` : '';
     body = `<p>${inline(q.prompt)}</p><p class="small"><b>Your code</b></p><pre class="code"><code>${esc(a || '(no answer)')}</code></pre>
-      ${r.detail.empty ? '<p class="small muted">No code was written.</p>' : ''}${r.detail.lead ? feedback('bad', r.detail.lead) : ''}${tests}
+      ${r.detail.empty ? '<p class="small muted">No code was written.</p>' : ''}${r.detail.total ? `<p class="small muted">${r.detail.passed} of ${r.detail.total} tests passed. Coding is scored all or nothing here, as candidates report for the real exam.</p>` : ''}${r.detail.lead ? feedback('bad', r.detail.lead) : ''}${tests}
       <p class="small"><b>One correct way</b></p><pre class="code"><code>${esc(q.solution)}</code></pre>`;
   } else if (q.type === 'prompt') {
     body = `<p>${inline(q.task)}</p><p class="small"><b>Your prompt</b></p><pre class="code" style="white-space:pre-wrap"><code>${esc(r.detail.tmpl || '(no prompt)')}</code></pre>
