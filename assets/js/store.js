@@ -90,6 +90,17 @@ function merge(a, b) {
 }
 
 // ---------- Supabase ----------
+// After a sign-in link, Supabase returns tokens in the URL hash. Grab them before the router
+// treats the hash as a page, then clean the address bar.
+const authHash = (() => {
+  const h = location.hash;
+  if (h && !h.startsWith('#/') && /access_token=|error=|error_code=/.test(h)) {
+    history.replaceState(null, '', location.pathname + location.search);
+    return h.slice(1);
+  }
+  return '';
+})();
+
 export let linkError = false;
 
 export async function initRemote() {
@@ -97,8 +108,17 @@ export async function initRemote() {
   try {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
     client = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
-      auth: { flowType: 'pkce', persistSession: true, detectSessionInUrl: true },
+      auth: { flowType: 'implicit', persistSession: true, detectSessionInUrl: false },
     });
+    if (authHash) {
+      const p = new URLSearchParams(authHash);
+      if (p.get('access_token') && p.get('refresh_token')) {
+        try {
+          const { error } = await client.auth.setSession({ access_token: p.get('access_token'), refresh_token: p.get('refresh_token') });
+          if (error) linkError = true;
+        } catch (e) { linkError = true; }
+      } else linkError = true;
+    }
     const { data } = await client.auth.getSession();
     session = data.session;
     client.auth.onAuthStateChange((_event, s) => {

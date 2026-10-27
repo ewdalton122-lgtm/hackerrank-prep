@@ -275,14 +275,9 @@ async function viewInternal() {
 }
 
 function signInCard(title) {
-  return `<div class="card"><h2>${title}</h2><p class="muted">Enter your email and I'll send you a sign-in email. No password needed.</p>
-    <div class="row"><input type="email" id="email" placeholder="you@example.com" style="max-width:320px;margin:0"><button class="btn primary" data-act="signin">Send email</button></div>
-    <div id="signinMsg" style="margin-top:12px"></div>
-    <div id="codeBox" class="hidden" style="margin-top:12px">
-      <p><b>Easiest way:</b> type the code from the email here. It works on any device, even if you read the email on a different one.</p>
-      <div class="row"><input type="text" id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="Code from the email" maxlength="12" style="max-width:220px;margin:0"><button class="btn primary" data-act="verify">Sign in</button></div>
-      <div id="codeMsg" style="margin-top:12px"></div>
-    </div></div>`;
+  return `<div class="card"><h2>${title}</h2><p class="muted">Enter your email and I'll send a sign-in link. No password needed. Open the link on the device you want to sign in on.</p>
+    <div class="row"><input type="email" id="email" placeholder="you@example.com" style="max-width:320px;margin:0"><button class="btn primary" data-act="signin">Send link</button></div>
+    <div id="signinMsg" style="margin-top:12px"></div></div>`;
 }
 function bindSignIn() {
   document.querySelector('[data-act="signin"]')?.addEventListener('click', async () => {
@@ -290,21 +285,8 @@ function bindSignIn() {
     const msg = document.getElementById('signinMsg');
     if (!/^\S+@\S+\.\S+$/.test(email)) { msg.innerHTML = feedback('hint', 'Enter a valid email address.'); return; }
     msg.innerHTML = '<span class="spinner"></span>Sending...';
-    try {
-      await signIn(email);
-      msg.innerHTML = feedback('ok', 'Check your email.', ['Type the code from the email below, or open the link in this same browser.']);
-      document.getElementById('codeBox').classList.remove('hidden');
-      document.getElementById('code').focus();
-    } catch (e) { msg.innerHTML = feedback('bad', 'Could not send the email.', [String(e.message || e)]); }
-  });
-  document.querySelector('[data-act="verify"]')?.addEventListener('click', async () => {
-    const email = document.getElementById('email').value.trim();
-    const code = document.getElementById('code').value.trim();
-    const msg = document.getElementById('codeMsg');
-    if (code.length < 6) { msg.innerHTML = feedback('hint', 'Enter the full code from the email.'); return; }
-    msg.innerHTML = '<span class="spinner"></span>Checking...';
-    try { await verifyCode(email, code); msg.innerHTML = feedback('ok', 'Signed in.'); }
-    catch (e) { msg.innerHTML = feedback('bad', 'That code did not work.', ['Check the digits, or send a new email. Codes expire after an hour and only work once.']); }
+    try { await signIn(email); msg.innerHTML = feedback('ok', 'Check your email.', ['Click the link once, on the device you want to sign in on. Links work one time and expire after an hour.']); }
+    catch (e) { msg.innerHTML = feedback('bad', 'Could not send the link.', [String(e.message || e)]); }
   });
 }
 
@@ -378,6 +360,6 @@ setInterval(() => {
 window.addEventListener('hashchange', render);
 render();
 initRemote().then(() => {
-  if (linkError) { toast('That sign-in link expired or was already used. Send a new email and type the code instead.'); location.hash = '#/settings'; }
+  if (linkError) { toast('That sign-in link expired or was already used. Send a new link and click it once.'); location.hash = '#/settings'; }
   softRender();
 });
