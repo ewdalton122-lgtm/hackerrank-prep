@@ -23,7 +23,7 @@ function startWorker() {
 
 export const pythonReady = () => { if (!worker) startWorker(); return readyP; };
 
-export async function runPython(code, tests, timeoutMs = 6000) {
+export async function runPython(code, tests, timeoutMs = 6000, mode = 'fn') {
   await pythonReady();
   return new Promise((resolve) => {
     const id = ++seq;
@@ -34,7 +34,7 @@ export async function runPython(code, tests, timeoutMs = 6000) {
       resolve({ timeout: true, tests: [] });
     }, timeoutMs);
     pending.set(id, (r) => { clearTimeout(timer); resolve(r); });
-    worker.postMessage({ id, code, tests });
+    worker.postMessage({ id, code, tests, mode });
   });
 }
 

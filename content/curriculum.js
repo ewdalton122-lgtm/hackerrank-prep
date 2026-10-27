@@ -7,6 +7,8 @@ import { practice } from './practice.js';
 import { sqlDrills } from './sqlpractice.js';
 import { promptMore } from './promptdrills.js';
 import { interview } from './interview.js';
+import { pythonMore } from './pythonmore.js';
+import { ioSets } from './pythonio.js';
 
 const r = (id, title, minutes, blurb, links, blocks) => ({ id, title, minutes, blurb, links, blocks });
 
@@ -61,7 +63,11 @@ export const STAGES = [
   {
     id: 's1', num: 1, title: 'Python basics', roles: ['ds', 'fde'],
     summary: 'Variables, decisions, loops, text, dictionaries and functions. Enough to bank the easy test cases.',
-    items: python,
+    items: (() => {
+      const core = python.filter((i) => !i.optional);
+      const extras = python.filter((i) => i.optional);
+      return [...core, ...pythonMore, ...extras];
+    })(),
   },
   {
     id: 's2', num: 2, title: 'SQL foundations', roles: ['ds', 'fde'],
@@ -84,49 +90,17 @@ export const STAGES = [
     items: systems,
   },
   {
-    id: 's6', num: 6, title: 'Coding warm-ups', roles: ['ds', 'fde'],
-    summary: 'Easy and medium HackerRank problems that bank the straightforward test cases.',
+    id: 's6', num: 6, title: 'Coding practice', roles: ['ds', 'fde'],
+    summary: 'Exam-style problems that read input and print answers, graded here with feedback. Real HackerRank problems are optional extras at the end.',
     items: [
       codingStrategy,
-      r('cw-1', 'Warm-up set 1: first programs', 150, 'Simple functions and sums.', [
-        { label: 'Solve Me First', url: 'https://www.hackerrank.com/challenges/solve-me-first/problem', use: 'Functions and return' },
-        { label: 'Simple Array Sum', url: 'https://www.hackerrank.com/challenges/simple-array-sum/problem', use: 'Accumulator loop' },
-        { label: 'A Very Big Sum', url: 'https://www.hackerrank.com/challenges/a-very-big-sum/problem', use: 'Same pattern, bigger numbers' },
-        { label: 'Compare the Triplets', url: 'https://www.hackerrank.com/challenges/compare-the-triplets/problem', use: 'Comparisons' },
-        { label: 'Plus Minus', url: 'https://www.hackerrank.com/challenges/plus-minus/problem', use: 'Counting and formatting output' },
-      ]),
-      r('cw-2', 'Warm-up set 2: arrays and output formatting', 180, 'Loops, max/min, nested loops.', [
-        { label: 'Staircase', url: 'https://www.hackerrank.com/challenges/staircase/problem', use: 'Nested loops and printed output' },
-        { label: 'Birthday Cake Candles', url: 'https://www.hackerrank.com/challenges/birthday-cake-candles/problem', use: 'Max and count' },
-        { label: 'Mini-Max Sum', url: 'https://www.hackerrank.com/challenges/mini-max-sum/problem', use: 'Sort, sum, min and max' },
-        { label: 'Diagonal Difference', url: 'https://www.hackerrank.com/challenges/diagonal-difference/problem', use: 'A 2D grid' },
-        { label: 'Apple and Orange', url: 'https://www.hackerrank.com/challenges/apple-and-orange/problem', use: 'Ranges and conditions' },
-      ]),
-      r('cw-3', 'Warm-up set 3: strings', 180, 'Parsing and cleaning text.', [
-        { label: 'sWAP cASE', url: 'https://www.hackerrank.com/challenges/swap-case/problem', use: 'String methods' },
-        { label: 'String Split and Join', url: 'https://www.hackerrank.com/challenges/python-string-split-and-join/problem', use: 'split and join' },
-        { label: 'Time Conversion', url: 'https://www.hackerrank.com/challenges/time-conversion/problem', use: 'Parsing and formatting' },
-        { label: 'Pangrams', url: 'https://www.hackerrank.com/challenges/pangrams/problem', use: 'Sets' },
-        { label: 'Mars Exploration', url: 'https://www.hackerrank.com/challenges/mars-exploration/problem', use: 'Counting mismatches' },
-      ]),
-      r('cw-4', 'Warm-up set 4: dictionaries and sets', 180, 'Counting and lookup.', [
-        { label: 'collections.Counter()', url: 'https://www.hackerrank.com/challenges/collections-counter/problem', use: 'Counting' },
-        { label: 'Sales by Match', url: 'https://www.hackerrank.com/challenges/sock-merchant/problem', use: 'Dictionary counting' },
-        { label: 'Migratory Birds', url: 'https://www.hackerrank.com/challenges/migratory-birds/problem', use: 'Counting and ties' },
-        { label: 'Two Strings', url: 'https://www.hackerrank.com/challenges/two-strings/problem', use: 'Sets' },
-        { label: 'Making Anagrams', url: 'https://www.hackerrank.com/challenges/ctci-making-anagrams/problem', use: 'Counting letters' },
-      ]),
-      r('cw-5', 'Warm-up set 5: sorting and a first greedy idea', 180, 'Sort, then take the obvious choice.', [
-        { label: 'Marc\'s Cakewalk', url: 'https://www.hackerrank.com/challenges/marcs-cakewalk/problem', use: 'Sort then multiply' },
-        { label: 'Mark and Toys', url: 'https://www.hackerrank.com/challenges/mark-and-toys/problem', use: 'Sort, then spend a budget' },
-        { label: 'Minimum Absolute Difference in an Array', url: 'https://www.hackerrank.com/challenges/minimum-absolute-difference-in-an-array/problem', use: 'Sort, compare neighbours' },
-        { label: 'Grid Challenge', url: 'https://www.hackerrank.com/challenges/grid-challenge/problem', use: 'Sorting inside a grid (harder)' },
-      ]),
-      r('cw-6', 'Software Engineer prep kit', 240, 'HackerRank\'s own interview-style problem set.', [
+      ...ioSets.flatMap((set) => set.items).flatMap((i) => (i.id === 'io-search' ? [practice.find((p) => p.id === 'pr-binary'), i, practice.find((p) => p.id === 'pr-peak')] : [i])),
+      practice.find((p) => p.id === 'pr-running'),
+      { ...(r('cw-6', 'Software Engineer prep kit', 240, 'HackerRank\'s own interview-style problem set.', [
         { label: 'HackerRank Software Engineer Prep Kit', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit', use: 'Needs a HackerRank login. Pick problems tagged easy first. Binary search and running-average problems are good practice.' },
         { label: 'HackerRank Preparation Kits', url: 'https://www.hackerrank.com/interview/preparation-kits', use: '1-week kit: 21 problems.' },
-      ]),
-      r('cw-7', 'Binary search and running totals', 240, 'Two patterns that show up in real exam problems.', [
+      ])), optional: true },
+      { ...(r('cw-7', 'Binary search and running totals', 240, 'Two patterns that show up in real exam problems.', [
         { label: 'Lookup with Binary Search', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/lookup-with-binary-search/problem', use: 'Plain binary search. Needs a HackerRank login.' },
         { label: 'Find Peak Element in Bitonic Array', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/find-peak-element-in-bitonic-array/problem', use: 'Binary search with a twist. Do it after the one above.' },
         { label: 'Check Valid Anagram', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/check-valid-anagram/problem', use: 'Counting letters with a dictionary' },
@@ -141,9 +115,8 @@ export const STAGES = [
         { t: 'p', text: 'Instead of re-adding the list every time, keep a `total` and a `count` as you loop. The average of everything so far is `total / count`. Update them **after** you compare the current item.' },
         { t: 'code', text: 'total = 0\nfor i, x in enumerate(nums):\n    if i > 0 and x > total / i:\n        print(x, "beats the average of the items before it")\n    total += x' },
         { t: 'tip', text: 'Write the simple version first and submit it, then improve. Each hidden test case earns its own points.' },
-      ]),
-      ...practice,
-      r('cw-8', 'Checkpoint: the 13 representative problems', 300, 'A representative set of 13 problems. If you can solve most of these without help, your coding is in good shape.', [
+      ])), optional: true },
+      { ...(r('cw-8', 'Checkpoint: the 13 representative problems', 300, 'A representative set of 13 problems. If you can solve most of these without help, your coding is in good shape.', [
         { label: '1. Solve Me First', url: 'https://www.hackerrank.com/challenges/solve-me-first/problem', use: 'Functions and return' },
         { label: '2. Simple Array Sum', url: 'https://www.hackerrank.com/challenges/simple-array-sum/problem', use: 'Loop with a running total' },
         { label: '3. Birthday Cake Candles', url: 'https://www.hackerrank.com/challenges/birthday-cake-candles/problem', use: 'Max and count' },
@@ -157,11 +130,11 @@ export const STAGES = [
         { label: '11. Diagonal Difference', url: 'https://www.hackerrank.com/challenges/diagonal-difference/problem', use: '2D grid' },
         { label: '12. Count Elements Greater Than Previous Average', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/count-elements-greater-than-previous-average/problem', use: 'Running average' },
         { label: '13. Grid Challenge', url: 'https://www.hackerrank.com/challenges/grid-challenge/problem', use: '2D grid and sorting' },
-      ]),
+      ])), optional: true },
     ],
   },
   {
-    id: 's7', num: 7, title: 'Exam simulation', roles: ['ds', 'fde'],
+        id: 's7', num: 7, title: 'Exam simulation', roles: ['ds', 'fde'],
     summary: 'Timed practice under exam conditions until your scores are comfortably above the bar.',
     items: [
       r('sim-1', 'Retake the HackerRank sample test', 45, 'Compare with your first attempt.', [

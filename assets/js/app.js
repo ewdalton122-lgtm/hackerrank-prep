@@ -166,6 +166,7 @@ function viewToday() {
 }
 
 function itemKind(it) {
+  if (it.optional) return 'Optional extra';
   if (it.exercise?.kind === 'python') return 'Python practice';
   if (it.exercise?.kind === 'sql') return 'SQL practice';
   if (it.exercise?.kind === 'prompt') return 'Prompt drill';

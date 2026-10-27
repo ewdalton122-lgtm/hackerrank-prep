@@ -1,0 +1,301 @@
+// Stage 1, part 2: the Python the exam problems actually need, taught inside the site.
+export const pythonMore = [
+  {
+    id: 'py-lists',
+    title: 'Lists: ordered collections',
+    minutes: 60,
+    blurb: 'Indexing, slicing, methods and list comprehensions.',
+    blocks: [
+      { t: 'p', text: 'A **list** holds items in order, inside square brackets. It is like a column of cells: each item has a position, and positions start at **0**.' },
+      { t: 'code', text: 'nums = [10, 20, 30, 40]\nnums[0]       # 10  (first)\nnums[-1]      # 40  (last)\nnums[1:3]     # [20, 30]  (from position 1 up to, but not including, 3)\nnums[:2]      # [10, 20]\nnums[2:]      # [30, 40]\nlen(nums)     # 4' },
+      { t: 'h', text: 'Changing a list' },
+      { t: 'code', text: 'nums.append(50)       # add to the end\nnums.insert(0, 5)     # add at a position\nnums.remove(20)       # remove the first 20\nnums.pop()            # remove and return the last item\nnums[0] = 99          # replace an item' },
+      { t: 'h', text: 'List comprehensions: build a list in one line' },
+      { t: 'code', text: 'squares = [x * x for x in nums]            # transform every item\nbig = [x for x in nums if x > 20]          # keep only some items\nbig_squares = [x * x for x in nums if x > 20]   # both' },
+      { t: 'analogy', text: 'A comprehension is a filtered, transformed column in Excel: "for every cell in column A, if it is over 20, show its square".' },
+      { t: 'warn', text: 'Reading past the end (`nums[10]` in a list of 4) raises an `IndexError`. And `sort()` changes the list and returns `None`, so `x = nums.sort()` makes `x` equal to `None`.' },
+    ],
+    quiz: [
+      {
+        q: 'What is `[10, 20, 30, 40][1:3]`?',
+        options: ['[10, 20, 30]', '[20, 30]', '[20, 30, 40]', '[10, 20]'],
+        answer: 1,
+        explain: [
+          'That would be `[0:3]`. The slice starts at position 1.',
+          'Correct. A slice starts at the first number and stops just before the second.',
+          'The slice stops before position 3, so 40 is not included.',
+          'That would be `[0:2]`.',
+        ],
+      },
+      {
+        q: 'What does `nums[-1]` give you?',
+        options: ['The first item', 'The last item', 'An error', 'The list reversed'],
+        answer: 1,
+        explain: [
+          'The first item is `nums[0]`.',
+          'Correct. Negative numbers count from the end.',
+          'Negative positions are allowed in Python.',
+          'Reversing is `nums[::-1]`.',
+        ],
+      },
+      {
+        q: 'After `x = [3, 1, 2].sort()`, what is `x`?',
+        options: ['[1, 2, 3]', '[3, 1, 2]', 'None', 'An error'],
+        answer: 2,
+        explain: [
+          '`sort()` changes the list in place but returns nothing. Use `sorted(...)` to get a new sorted list.',
+          'The original list was changed, but `x` does not hold it.',
+          'Correct. Methods that change a list in place return `None`.',
+          'It runs fine. The result is just not what people expect.',
+        ],
+      },
+    ],
+    exercise: {
+      kind: 'python',
+      prompt: 'Write `even_squares(nums)` that returns a new list holding the **square of every even number**, in the original order. Odd numbers are skipped.',
+      fn: 'even_squares',
+      starter: 'def even_squares(nums):\n    # keep the even numbers, then square them\n    pass\n',
+      tests: [
+        { expr: 'even_squares([1, 2, 3, 4])', expected: '[4, 16]' },
+        { expr: 'even_squares([3, 5, 7])', expected: '[]' },
+        { expr: 'even_squares([6, -2, 0])', expected: '[36, 4, 0]' },
+        { expr: 'even_squares([])', expected: '[]', hidden: true, edge: 'An empty list should give back an empty list.' },
+      ],
+      hints: ['A number `x` is even when `x % 2 == 0`.', 'A list comprehension with `if` keeps only some items.', '`return [x * x for x in nums if x % 2 == 0]`'],
+      solution: 'def even_squares(nums):\n    return [x * x for x in nums if x % 2 == 0]\n',
+    },
+  },
+
+  {
+    id: 'py-sorting',
+    title: 'Sorting, tuples and sets',
+    minutes: 60,
+    blurb: 'Sort by any rule, remove duplicates and test membership quickly.',
+    blocks: [
+      { t: 'p', text: '`sorted(items)` returns a **new** sorted list and leaves the original alone. Add `reverse=True` for biggest first. To sort by your own rule, give a `key`: a small function that says what to sort on.' },
+      { t: 'code', text: 'sorted([3, 1, 2])                       # [1, 2, 3]\nsorted(["pear", "fig"], key=len)        # ["fig", "pear"]  (shortest first)\nsorted(words, key=lambda w: (len(w), w))   # by length, then A to Z\nsorted(words, key=lambda w: -len(w))       # longest first' },
+      { t: 'tip', text: 'A **tuple** like `(len(w), w)` compares left to right: first by length, and only if tied, by the word. That is how you sort by two rules.' },
+      { t: 'h', text: 'Tuples and sets' },
+      { t: 'code', text: 'point = (3, 4)          # a tuple: ordered, cannot be changed\nx, y = point            # unpack it into two names\n\nseen = {1, 2, 2, 3}     # a set: no duplicates, no order\nlen(seen)               # 3\n2 in seen               # True, and very fast even for a huge set\nset([1, 1, 2])          # {1, 2}   remove duplicates from a list' },
+      { t: 'warn', text: 'Capital letters sort **before** lowercase ones (`"B"` comes before `"a"`). Use `key=str.lower` if the problem wants A to Z ignoring case.' },
+    ],
+    quiz: [
+      {
+        q: 'What is `len(set([4, 4, 5, 5, 5]))`?',
+        options: ['5', '2', '3', '1'],
+        answer: 1,
+        explain: [
+          'That is the length of the list. A set removes duplicates first.',
+          'Correct. The set holds just 4 and 5.',
+          'There are only two different values.',
+          'There are two different values, not one.',
+        ],
+      },
+      {
+        q: 'You want words sorted shortest first, and A to Z when lengths tie. Which key does it?',
+        options: ['key=len', 'key=lambda w: (len(w), w)', 'key=lambda w: w', 'reverse=True'],
+        answer: 1,
+        explain: [
+          'That sorts by length only. Tied words keep their original order.',
+          'Correct. The tuple sorts by length first, then by the word.',
+          'That sorts A to Z only.',
+          'That reverses the whole order.',
+        ],
+      },
+      {
+        q: 'Why is `x in my_set` usually faster than `x in my_list` for large collections?',
+        options: ['Sets are sorted', 'A set can jump straight to the item, a list checks one by one', 'Lists cannot be searched', 'It is not faster'],
+        answer: 1,
+        explain: [
+          'Sets are not sorted. They use a different trick.',
+          'Correct. A set finds items directly, so checking membership stays fast as it grows.',
+          'Lists can be searched, just slowly.',
+          'For big collections the difference is huge.',
+        ],
+      },
+    ],
+    exercise: {
+      kind: 'python',
+      prompt: 'Write `sort_words(words)` that returns the words sorted by **length** (shortest first). Words of the same length go in alphabetical order.',
+      fn: 'sort_words',
+      starter: 'def sort_words(words):\n    # sort by two rules: length, then alphabet\n    pass\n',
+      tests: [
+        { expr: 'sort_words(["pear", "fig", "apple", "kiwi"])', expected: '["fig", "kiwi", "pear", "apple"]' },
+        { expr: 'sort_words(["bb", "aa", "c"])', expected: '["c", "aa", "bb"]' },
+        { expr: 'sort_words([])', expected: '[]', hidden: true, edge: 'An empty list stays empty.' },
+        { expr: 'sort_words(["b", "a", "B"])', expected: '["B", "a", "b"]', hidden: true, edge: 'Capital letters come before lowercase ones in a normal sort. Do not change the case.' },
+      ],
+      hints: ['`sorted(words, key=...)` takes a rule for what to sort on.', 'A tuple sorts by its first item, then its second: `(len(w), w)`.', '`return sorted(words, key=lambda w: (len(w), w))`'],
+      solution: 'def sort_words(words):\n    return sorted(words, key=lambda w: (len(w), w))\n',
+    },
+  },
+
+  {
+    id: 'py-grids',
+    title: 'Grids: lists inside lists',
+    minutes: 50,
+    blurb: 'Rows, columns and the two-step loop.',
+    blocks: [
+      { t: 'p', text: 'A grid is a list of rows, and each row is a list. `grid[r][c]` means row `r`, column `c`.' },
+      { t: 'code', text: 'grid = [[1, 2, 3],\n        [4, 5, 6]]\ngrid[1][2]            # 6  (row 1, column 2)\nlen(grid)             # 2  rows\nlen(grid[0])          # 3  columns\n\nfor row in grid:                # each row\n    for value in row:           # each cell\n        print(value)\n\nfor r in range(len(grid)):      # when you need the positions\n    for c in range(len(grid[0])):\n        print(r, c, grid[r][c])' },
+      { t: 'analogy', text: 'It is a spreadsheet. The outer loop walks down the rows, the inner loop walks across the cells of one row.' },
+      { t: 'tip', text: 'To read a grid from input: `grid = [list(map(int, input().split())) for _ in range(n)]`.' },
+    ],
+    quiz: [
+      {
+        q: 'In `grid = [[1, 2, 3], [4, 5, 6]]`, what is `grid[0][2]`?',
+        options: ['1', '3', '4', '6'],
+        answer: 1,
+        explain: [
+          'That is `grid[0][0]`.',
+          'Correct. Row 0 is `[1, 2, 3]`, and its position 2 is 3.',
+          'That is `grid[1][0]`.',
+          'That is `grid[1][2]`.',
+        ],
+      },
+      {
+        q: 'How do you get the number of columns of a non-empty grid?',
+        options: ['len(grid)', 'len(grid[0])', 'grid.columns', 'len(grid) * 2'],
+        answer: 1,
+        explain: [
+          'That is the number of rows.',
+          'Correct. The first row tells you how many cells each row holds.',
+          'Python lists do not have that.',
+          'That has no meaning here.',
+        ],
+      },
+    ],
+    exercise: {
+      kind: 'python',
+      prompt: 'Write `transpose(grid)` that returns the grid with rows and columns swapped. Row `r`, column `c` of the input becomes row `c`, column `r` of the result. Example: `[[1, 2, 3], [4, 5, 6]]` becomes `[[1, 4], [2, 5], [3, 6]]`.',
+      fn: 'transpose',
+      starter: 'def transpose(grid):\n    # the new grid has as many rows as the old one had columns\n    pass\n',
+      tests: [
+        { expr: 'transpose([[1, 2, 3], [4, 5, 6]])', expected: '[[1, 4], [2, 5], [3, 6]]' },
+        { expr: 'transpose([[1]])', expected: '[[1]]' },
+        { expr: 'transpose([[1, 2], [3, 4]])', expected: '[[1, 3], [2, 4]]' },
+        { expr: 'transpose([])', expected: '[]', hidden: true, edge: 'A grid with no rows has nothing to swap. Handle it before you read `grid[0]`.' },
+      ],
+      hints: ['Build the new grid one column at a time: for each column `c`, collect `grid[r][c]` for every row `r`.', '`[[grid[r][c] for r in range(len(grid))] for c in range(len(grid[0]))]`', 'An empty grid has no `grid[0]`. Return `[]` first: `if not grid: return []`.'],
+      solution: 'def transpose(grid):\n    if not grid:\n        return []\n    return [[grid[r][c] for r in range(len(grid))] for c in range(len(grid[0]))]\n',
+    },
+  },
+
+  {
+    id: 'py-input',
+    title: 'Reading input like the exam does',
+    minutes: 45,
+    blurb: 'Almost every exam problem starts with input() and ends with print().',
+    blocks: [
+      { t: 'p', text: 'On the exam your program does not receive neat function arguments. It **reads text from the input** and **prints** the answer. The grader feeds it the input and compares what it prints.' },
+      { t: 'code', text: 'name = input()                     # one line of text (always text, even digits)\nn = int(input())                   # one whole number\na, b = map(int, input().split())   # "4 9" on one line -> a = 4, b = 9\nnums = list(map(int, input().split()))   # "3 5 8" -> [3, 5, 8]\n\nprint(total)           # prints the value and a new line\nprint(a, b)            # prints "4 9" (one space between)\nprint(*nums)           # prints "3 5 8" from a list' },
+      { t: 'warn', text: '`input("Enter a number: ")` **prints** that message too, and the grader sees it as part of your answer. Always call `input()` with nothing inside the brackets.' },
+      { t: 'tip', text: '`input()` always returns **text**. `"5" + "3"` is `"53"`, not 8. Convert with `int(...)` before doing arithmetic.' },
+    ],
+    quiz: [
+      {
+        q: 'What type does `input()` return?',
+        options: ['An integer', 'Text (a string)', 'A list', 'It depends on what the user types'],
+        answer: 1,
+        explain: [
+          'You must convert it yourself with `int(...)`.',
+          'Correct. Even if the line is `42`, you get the text `"42"` until you convert it.',
+          'A line of text is just text. Use `.split()` to break it into a list of pieces.',
+          '`input()` always gives text.',
+        ],
+      },
+      {
+        q: 'The input line is `4 9 2`. Which line gives you the list `[4, 9, 2]` of numbers?',
+        options: ['int(input())', 'list(map(int, input().split()))', 'input().int()', 'input()'],
+        answer: 1,
+        explain: [
+          '`int(...)` fails because `"4 9 2"` is not one number.',
+          'Correct. `.split()` cuts the line into pieces, and `map(int, ...)` converts each one.',
+          'Text has no `.int()` method.',
+          'That gives the single text `"4 9 2"`.',
+        ],
+      },
+      {
+        q: 'Why is `input("Enter a number: ")` a problem on the exam?',
+        options: ['It is not valid Python', 'The message is printed and counts as part of your output', 'It reads two lines', 'It converts the input to text'],
+        answer: 1,
+        explain: [
+          'It is valid, which is why it catches people out.',
+          'Correct. The grader compares everything you print, so the extra message makes the answer wrong.',
+          'It reads one line, like normal.',
+          '`input()` always returns text.',
+        ],
+      },
+    ],
+    exercise: {
+      kind: 'python',
+      io: true,
+      prompt: 'Read one line with two integers separated by a space. Print their **sum** on the first line and their **product** on the second line.',
+      starter: '# Read the input with input(), then print the answer.\n',
+      tests: [
+        { input: '3 4\n', output: '7\n12' },
+        { input: '10 -2\n', output: '8\n-20' },
+        { input: '0 5\n', output: '5\n0', hidden: true, edge: 'Zero is a valid input.' },
+      ],
+      hints: ['`a, b = map(int, input().split())` reads two numbers from one line.', 'Print the sum with `print(a + b)`.', 'Print the product on a second line with another `print(a * b)`.'],
+      solution: 'a, b = map(int, input().split())\nprint(a + b)\nprint(a * b)\n',
+    },
+  },
+
+  {
+    id: 'py-speed',
+    title: 'Fast enough? Thinking about size',
+    minutes: 55,
+    blurb: 'Why a correct solution can still fail the big hidden tests.',
+    blocks: [
+      { t: 'p', text: 'Hidden tests often include a **very large input**. A solution that is correct but slow runs out of time, and you lose those test cases. You do not need maths. You need a rough feel for how the work grows.' },
+      { t: 'list', items: [
+        '**One loop over n items:** about n steps. Fast.',
+        '**A loop inside a loop over n items:** about n times n steps. For n = 1,000 that is a million: fine. For n = 200,000 that is 40 billion: far too slow.',
+        '**Sorting:** about n log n. Fast enough for huge lists.',
+        '**Asking "is x in this list?" inside a loop** is a hidden loop. Use a **set** or a **dictionary** instead.',
+      ] },
+      { t: 'code', text: '# slow: for every number, scan the whole list again\ndef has_duplicate_slow(nums):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] == nums[j]:\n                return True\n    return False\n\n# fast: a set remembers what we have seen\ndef has_duplicate(nums):\n    seen = set()\n    for x in nums:\n        if x in seen:\n            return True\n        seen.add(x)\n    return False' },
+      { t: 'analogy', text: 'Comparing every row to every other row is a cross join. It works for 20 rows and freezes your laptop at 200,000.' },
+      { t: 'tip', text: 'Strategy: write the simple version first (it earns the small tests), then replace the slow part with a set, a dictionary or a sort.' },
+    ],
+    quiz: [
+      {
+        q: 'n is 100,000. Which approach is probably too slow?',
+        options: ['One loop through the list', 'A loop inside a loop over the whole list', 'Putting items in a set', 'Sorting the list once'],
+        answer: 1,
+        explain: [
+          'One pass is fast.',
+          'Correct. That is about 10 billion steps.',
+          'Set operations are fast.',
+          'Sorting is fast enough even for big lists.',
+        ],
+      },
+      {
+        q: 'Inside a loop you write `if x in big_list:`. What is the hidden cost?',
+        options: ['None', 'It scans the list each time, so it is a loop inside the loop', 'It sorts the list', 'It copies the list'],
+        answer: 1,
+        explain: [
+          'Checking a list means looking at its items one by one.',
+          'Correct. Switching to a set makes the check nearly instant.',
+          'It does not sort anything.',
+          'No copy is made, but the scan is still slow.',
+        ],
+      },
+    ],
+    exercise: {
+      kind: 'python',
+      prompt: 'Write `has_duplicate(nums)` that returns `True` if any value appears more than once, otherwise `False`. It must also be **fast enough for a list of 200,000 numbers**.',
+      fn: 'has_duplicate',
+      starter: 'def has_duplicate(nums):\n    # compare every pair? That will be too slow for the big test.\n    pass\n',
+      tests: [
+        { expr: 'has_duplicate([1, 2, 3, 1])', expected: 'True' },
+        { expr: 'has_duplicate([4, 5, 6])', expected: 'False' },
+        { expr: 'has_duplicate([])', expected: 'False', hidden: true, edge: 'An empty list has no duplicates.' },
+        { expr: 'has_duplicate(list(range(200000)))', expected: 'False', hidden: true, edge: 'A very big list. A loop inside a loop will time out. Use a set to remember what you have seen.' },
+      ],
+      hints: ['A set stores items you have already seen, and checking it is instant.', 'Loop through the numbers. If one is already in the set, return `True`. Otherwise add it.', 'After the loop, return `False`. A shortcut: `len(set(nums)) != len(nums)`.'],
+      solution: 'def has_duplicate(nums):\n    seen = set()\n    for x in nums:\n        if x in seen:\n            return True\n        seen.add(x)\n    return False\n',
+    },
+  },
+];

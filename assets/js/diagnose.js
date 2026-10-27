@@ -37,6 +37,14 @@ export function explainPyError(err, fn = '') {
       steps.push('Look at that line and the one above it for a missing colon, bracket or quote.');
       steps.push('Check that you did not use a reserved word (like `return` outside a function).');
     }
+  } else if (type === 'EOFError') {
+    lead = `Your program asked for more input than the test provides${where}.`;
+    steps.push('Each `input()` reads one line. Count how many lines the sample input has and how many times you call `input()`.');
+    steps.push('If a line holds several numbers, read it once with `input().split()` instead of calling `input()` for each number.');
+  } else if (type === 'ValueError' && /invalid literal for int|could not convert/.test(msg)) {
+    lead = `Python could not turn that text into a number${where}.`;
+    steps.push('A line like `3 5 8` is one piece of text. Split it first: `input().split()`, then convert each piece with `int(...)`.');
+    steps.push('Calling `int(input())` on a line with several numbers fails. Use `list(map(int, input().split()))`.');
   } else if (type === 'NameError') {
     const m = msg.match(/name '([^']+)' is not defined/);
     const name = m?.[1];
@@ -289,4 +297,57 @@ function lineDiff(gl, el) {
     }
   }
   return out;
+}
+
+/** Explains a failed stdin/stdout test: what the program printed versus what was expected. */
+export function diagnoseIo(entry, ctx = {}) {
+  const steps = [];
+  let lead = 'Your output does not match the expected output.';
+  const norm = (s) => {
+    const t = (s || '').replace(/\r\n/g, '\n').replace(/\n+$/, '');
+    return t.trim() === '' ? [] : t.split('\n').map((l) => l.replace(/\s+$/, ''));
+  };
+  const got = norm(entry.got);
+  const exp = norm(entry.expected);
+  const num = (s) => (s !== undefined && s.trim() !== '' && !Number.isNaN(Number(s)) ? Number(s) : null);
+
+  if (!got.length && exp.length) {
+    lead = 'Your program printed nothing.';
+    steps.push('The grader reads what your program **prints**. Use `print(answer)` at the end.');
+    steps.push('If you wrote a function, remember to call it, and print what it returns.');
+  } else if (got.length && exp.length && got[0] !== exp[0] && got[0].endsWith(exp[0]) && got.length >= exp.length) {
+    lead = 'Your output has extra text before the answer.';
+    steps.push('A message inside `input("...")` is printed too. Use `input()` with nothing in the parentheses.');
+    steps.push('Print only the answer. No labels like "Result:".');
+  } else if (got.length !== exp.length) {
+    lead = `Expected ${exp.length} line${exp.length === 1 ? '' : 's'} of output, but your program printed ${got.length}.`;
+    steps.push(got.length > exp.length ? 'You are printing too much. Is a `print` inside a loop that should be outside it? Is there debug output left in?' : 'You are printing too little. Should each result be printed on its own line? Check the loop and the cases where nothing is printed.');
+  } else {
+    const i = got.findIndex((l, k) => l !== exp[k]);
+    const g = got[i];
+    const e = exp[i];
+    const where = exp.length > 1 ? ` on line ${i + 1}` : '';
+    if (g.toLowerCase() === e.toLowerCase()) {
+      lead = `Right letters, wrong capitalisation${where}.`;
+      steps.push('Compare the case of each word with the expected output exactly.');
+    } else if (g.replace(/\s+/g, '') === e.replace(/\s+/g, '')) {
+      lead = `The right characters, but the spacing is off${where}.`;
+      steps.push('Check spaces between items and at the start of the line. Graders compare text exactly.');
+      steps.push('`print(a, b)` puts one space between the values. Use `"".join(...)` or an f-string when you need a different separator.');
+    } else if (num(g) !== null && num(e) !== null) {
+      if (Math.abs(num(g) - num(e)) < 1e-9) {
+        lead = `The right number, but written differently${where}.`;
+        steps.push(/\./.test(g) && !/\./.test(e) ? 'You printed a decimal like `5.0` but a whole number was expected. Use `//` for whole-number division, or `int(...)`.' : 'Format the number to match, for example `f"{x:.2f}"` for two decimal places.');
+      } else {
+        lead = `A number is different${where}.`;
+        steps.push(`Expected \`${e}\` but your program printed \`${g}\`.`);
+        steps.push('Work this input by hand, then compare with each step of your code. Look for an off-by-one in a loop, or `>` that should be `>=`.');
+      }
+    } else {
+      lead = `A line is different${where}.`;
+      steps.push(`Expected \`${e}\` but your program printed \`${g}\`.`);
+    }
+  }
+  if (ctx.hint) steps.push(ctx.hint);
+  return { lead, steps };
 }

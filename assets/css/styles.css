@@ -230,3 +230,7 @@ details.schema summary { cursor: pointer; font-weight: 600; color: var(--ink); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { padding: 6px 12px; border-radius: 99px; background: var(--brand-bg); color: var(--brand-d); font-size: .85rem; font-weight: 600; text-decoration: none; }
 .chip:hover { background: #dcebfb; }
+
+.io { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 6px 0 4px; }
+.io b { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+.io pre.code { margin: 0; }

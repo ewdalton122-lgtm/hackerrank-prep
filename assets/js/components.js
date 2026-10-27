@@ -2,7 +2,7 @@
 import { getState, update, noteMiss } from './store.js';
 import { esc, inline, feedback, copyText, enableTab, renderBlocks } from './ui.js';
 import { runPython, pythonReady, runQuery } from './runners.js';
-import { explainPyError, diagnosePyTest, explainSqlError, compareSql, diagnoseText } from './diagnose.js';
+import { explainPyError, diagnosePyTest, diagnoseIo, explainSqlError, compareSql, diagnoseText } from './diagnose.js';
 import { SCHEMA_DOC } from '../../content/sql.js';
 
 const getNote = (k) => getState().notes[k] ?? '';
@@ -55,6 +55,11 @@ export function mountQuiz(host, item, onComplete) {
 }
 
 // ---------------------------------------------------------------- shared exercise chrome
+function ioSample(ex) {
+  const t = ex.tests.find((x) => !x.hidden) || ex.tests[0];
+  return `<div class="io"><div><b>Sample input</b><pre class="code">${esc(String(t.input).replace(/\n$/, '') || '(empty)')}</pre></div><div><b>Sample output</b><pre class="code">${esc(String(t.output).replace(/\n$/, '') || '(empty)')}</pre></div></div>
+    <p class="small muted">Your program reads from <code>input()</code> and prints the answer with <code>print()</code>, just like on HackerRank.</p>`;
+}
 function exerciseShell(ex, item, extraTop = '') {
   return `
     <p>${inline(ex.prompt || ex.task)}</p>
@@ -83,7 +88,7 @@ export function mountPython(host, item, onPass) {
   const key = `code:${item.id}`;
   const st = { fails: 0, hintIdx: 0 };
   host.innerHTML = `
-    ${exerciseShell(ex, item)}
+    ${exerciseShell(ex, item, ex.io ? ioSample(ex) : '')}
     <textarea class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Python code">${esc(getNote(key) || ex.starter)}</textarea>
     <div class="row" style="margin:12px 0">
       <button class="btn primary" data-act="run">Run and check</button>
@@ -116,7 +121,9 @@ export function mountPython(host, item, onPass) {
     status.innerHTML = '<span class="spinner"></span>Running... (the first run loads Python and can take 10 to 20 seconds)';
     try {
       await pythonReady();
-      const res = await runPython(ta.value, ex.tests.map((t) => ({ expr: t.expr, expected: t.expected })));
+      const res = ex.io
+        ? await runPython(ta.value, ex.tests.map((t) => ({ input: t.input, expected: t.output })), 6000, 'io')
+        : await runPython(ta.value, ex.tests.map((t) => ({ expr: t.expr, expected: t.expected })));
       status.textContent = '';
       renderPythonResult(res);
     } catch (err) {
@@ -139,6 +146,29 @@ export function mountPython(host, item, onPass) {
     if (st.fails >= 3) host.querySelector('[data-act="solution"]').classList.remove('hidden');
   }
 
+  function renderIoResult(res) {
+    const clip = (s, n = 90) => { const t = String(s).replace(/\n$/, '').replace(/\n/g, ' / '); return t.length > n ? t.slice(0, n) + '...' : t; };
+    list.innerHTML = res.tests.map((t, i) => {
+      const spec = ex.tests[i];
+      const label = spec.hidden ? `Hidden test ${i + 1}` : `Test ${i + 1}: input <code>${esc(clip(t.input) || '(empty)')}</code>`;
+      if (t.ok) return `<li class="pass"><span>&#10003;</span><div>${label}${spec.hidden ? '' : ' printed the expected output'}</div></li>`;
+      const detail = t.err ? `stopped with ${esc(t.err.type)}`
+        : spec.hidden ? 'did not match. ' + esc(spec.edge || 'Think about edge cases.')
+          : `expected <code>${esc(clip(t.expected))}</code> but got <code>${esc(clip(t.got) || '(nothing)')}</code>`;
+      return `<li class="fail"><span>&#10007;</span><div>${label} ${detail}</div></li>`;
+    }).join('');
+    const firstFail = res.tests.findIndex((t) => !t.ok);
+    if (firstFail === -1) {
+      fbbox.innerHTML = feedback('ok', 'All tests passed. Nicely done.', ['Before moving on, ask yourself: what input would break this? Empty? One item? A very large number?']);
+      onPass(true);
+      return;
+    }
+    const t = res.tests[firstFail];
+    const d = t.err ? explainPyError({ type: t.err.type, msg: t.err.msg, line: t.err.line }, '') : diagnoseIo(t, { hint: ex.tests[firstFail].hidden ? ex.tests[firstFail].edge : '' });
+    fbbox.innerHTML = feedback('bad', d.lead, d.steps);
+    fail();
+  }
+
   function renderPythonResult(res) {
     if (res.timeout) {
       fbbox.innerHTML = feedback('bad', 'Your code ran for more than 6 seconds and was stopped.', ['This is usually an endless loop. For a `while` loop, check that something inside changes the condition.', 'For a `for` loop over a huge range, look for a simpler approach.']);
@@ -149,6 +179,7 @@ export function mountPython(host, item, onPass) {
       fbbox.innerHTML = feedback('bad', d.lead, d.steps);
       return fail();
     }
+    if (ex.io) return renderIoResult(res);
     const printedNote = res.stdout?.trim() ? `<p class="small muted">Your code also printed: <code>${esc(res.stdout.trim().slice(0, 200))}</code></p>` : '';
     list.innerHTML = res.tests.map((t, i) => {
       const spec = ex.tests[i];

@@ -402,6 +402,7 @@ export const python = [
   },
   {
     id: 'py-r-py4e1',
+    optional: true,
     title: 'Course: Python for Everybody, part 1',
     minutes: 360,
     blurb: 'Variables, conditionals and functions with auto-graded exercises.',
@@ -412,6 +413,7 @@ export const python = [
   },
   {
     id: 'py-r-py4e2',
+    optional: true,
     title: 'Course: Python for Everybody, part 2',
     minutes: 480,
     blurb: 'Loops, strings and lists.',
@@ -421,6 +423,7 @@ export const python = [
   },
   {
     id: 'py-r-py4e3',
+    optional: true,
     title: 'Course: Python for Everybody, part 3',
     minutes: 240,
     blurb: 'Dictionaries and tuples.',
@@ -430,6 +433,7 @@ export const python = [
   },
   {
     id: 'py-r-hr',
+    optional: true,
     title: 'Practice: HackerRank Python basics',
     minutes: 600,
     blurb: 'Train in the same editor you will be tested in.',
