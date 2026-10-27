@@ -206,6 +206,12 @@ export function mountPython(host, item, onPass) {
 }
 
 // ---------------------------------------------------------------- SQL
+// Exercise-specific hints: `traps` is a list of { has | lacks: RegExp, say }. A trap fires when the
+// student's query contains (has) or is missing (lacks) a pattern, so the feedback names the likely cause.
+function trapTips(ex, sql) {
+  return (ex.traps || []).filter((t) => (t.has && t.has.test(sql)) || (t.lacks && !t.lacks.test(sql))).slice(0, 3).map((t) => `Likely cause: ${t.say}`);
+}
+
 export function mountSql(host, item, onPass) {
   const ex = item.exercise;
   const key = `code:${item.id}`;
@@ -270,7 +276,7 @@ export function mountSql(host, item, onPass) {
         try { got = await runQuery(ta.value, ex.data); }
         catch (err) {
           const d = explainSqlError(err.message || err);
-          fbbox.innerHTML = feedback('bad', d.lead, d.steps, `<p class="small muted">Database message: <code>${esc(err.message || err)}</code></p>`);
+          fbbox.innerHTML = feedback('bad', d.lead, [...trapTips(ex, sql), ...d.steps], `<p class="small muted">Database message: <code>${esc(err.message || err)}</code></p>`);
           fail();
           got = null;
         }
@@ -282,7 +288,7 @@ export function mountSql(host, item, onPass) {
             fbbox.innerHTML = feedback('ok', 'Correct. Your result matches the expected answer.', ['Tip: write the same query again tomorrow without looking. Recall is what sticks.']);
             onPass(true);
           } else {
-            fbbox.innerHTML = feedback('bad', cmp.lead, cmp.steps);
+            fbbox.innerHTML = feedback('bad', cmp.lead, [...trapTips(ex, sql), ...cmp.steps]);
             fail();
           }
         }

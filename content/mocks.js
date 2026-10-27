@@ -355,6 +355,127 @@ const m4 = [
     'Thank you for raising this straight away, and I am sorry for the confusion it caused your customer. A wrong refund answer is serious and I understand why you are concerned.\n\nHere is what we know. The agent was using an out-of-date version of the policy. We have corrected it and paused refund answers until we have checked them.\n\nTo prevent a repeat, we will add refund questions to our test set and monitor those answers weekly, so any gap shows up before a customer sees it.\n\nNext step: I will send you a written summary by Thursday, and I would like a 20-minute call this week to confirm the checks you want in place.'),
 ];
 
+// ---------------------------------------------------------------- Mock 5 and 6: all-new questions in every section
+const m5 = [
+  Q('m5-q1', 'sd-async', 'Which of these is the best candidate for an asynchronous background job?', 2,
+    'Building a 2-million-row report and emailing a link when it is ready.', 'Slow work should run off the request path, with a notification when it finishes.', [
+      ['Checking that an email field contains an @ sign as the user types.', 'That is instant and gives immediate feedback, so it stays in the page.'],
+      ['Showing the signed-in user\'s name in the page header.', 'A tiny lookup that must be there when the page loads.'],
+      ['Verifying a password at login.', 'The user is waiting for the answer, so it must be synchronous.'],
+    ]),
+  Q('m5-q2', 'sd-scale', 'On a shared multi-tenant platform, one customer starts a huge import that slows down everyone else. What is the usual defense?', 1,
+    'Per-customer limits and quotas, so no single tenant can use more than its share.', 'Limits keep one noisy tenant from starving the others.', [
+      ['Give that customer their own copy of the whole platform.', 'That abandons the cost benefit of sharing.'],
+      ['Ask the other customers to stop working during imports.', 'Not a design. It does not scale and customers would leave.'],
+      ['Delete the import automatically after one minute.', 'Silent deletion loses data. Throttling or queueing is the safe option.'],
+    ]),
+  Q('m5-q3', 'sd-reliab', 'A new release causes errors in production. What is a rollback?', 0,
+    'Returning to the previous known-good version while you investigate.', 'It limits customer impact first. The cause can be fixed calmly afterwards.', [
+      ['Deleting the customer data that caused the errors.', 'That destroys data and does not fix the code.'],
+      ['Waiting to see whether the errors stop on their own.', 'Customers stay affected while you wait.'],
+      ['Moving the release to a faster server.', 'Speed is not the problem. The code is.'],
+    ]),
+  Q('m5-q4', 'sd-api', 'Your integration calls an API and receives HTTP status 429. What happened and what is the right response?', 3,
+    'You sent too many requests. Wait, then retry, with growing delays.', '429 means "too many requests". Backing off gives the other side time to recover.', [
+      ['The resource does not exist, so stop calling it.', 'That is 404.'],
+      ['The server crashed, so retry instantly in a tight loop.', 'A crash is usually a 5xx code, and instant retries make overload worse.'],
+      ['Your login is wrong, so send the same request again.', 'Bad credentials are 401 or 403, and repeating changes nothing.'],
+    ]),
+  PE('m5-pe1', 'pe-dx-format', 'Order number and quantity',
+    'Each input is a short message that contains exactly one order number (a capital letter, a dash and four digits, such as B-2210) and exactly one quantity. Output only this, with no other text: ORDER=<order number>;QTY=<quantity>',
+    [
+      { input: 'Please ship 12 units for order B-2210 by Friday', expected: 'ORDER=B-2210;QTY=12' },
+      { input: 'Order A-1042: customer needs 3 more', expected: 'ORDER=A-1042;QTY=3' },
+      { input: 'We are cancelling 250 units on C-7781 effective today', expected: 'ORDER=C-7781;QTY=250' },
+      { input: 'D-0007 should be 1 only', expected: 'ORDER=D-0007;QTY=1' },
+    ]),
+  WR('m5-w1', 'sk-scope', 'The feature that does not exist',
+    'A customer\'s VP expects the agent to update billing records automatically. In this release it can only read billing data, and writing is not supported. Write your reply to the VP (about 100 to 150 words).',
+    [
+      rb.goal(/goal|understand|thank|appreciate|important|makes sense|saves|time/i),
+      rb.fact('States plainly what is and is not possible today', /read|cannot|can't|not support|isn't supported|not possible|not in this release|today/i),
+      rb.options, rb.rec, rb.next,
+    ],
+    'Thank you for being clear about the goal. Updating billing records automatically would save your team real time, and I understand why it matters.\n\nTo be direct about today: in this release the agent can read billing data, but writing to it is not supported yet.\n\nThere are two options. Option one is a human-approval step: the agent prepares the change and a billing specialist approves it with one click. Option two is to wait for the write capability in a later release.\n\nI recommend option one, because it delivers most of the time savings now and keeps a person in control of financial data.\n\nNext step: can we schedule 30 minutes this week with your billing lead to design the approval step?'),
+];
+
+const m6 = [
+  Q('m6-q1', 'sd-scale', 'Traffic to a service doubles. Which change is "horizontal scaling"?', 1,
+    'Adding more servers and sharing the load between them.', 'Horizontal means more machines side by side.', [
+      ['Replacing the server with one that has a faster processor and more memory.', 'That is vertical scaling: a bigger single machine.'],
+      ['Rewriting the code in a different language.', 'That may change performance, but it is not scaling out.'],
+      ['Telling users to visit less often.', 'Not a technical solution.'],
+    ]),
+  Q('m6-q2', 'sd-security', 'What does "encryption at rest" protect?', 2,
+    'Data stored on disk, so a stolen drive or backup is unreadable without the key.', 'It covers saved data, as opposed to data moving over the network.', [
+      ['Data while it travels between the browser and the server.', 'That is encryption in transit (for example HTTPS).'],
+      ['Passwords typed into a form.', 'Typed passwords are protected in transit and by hashing, not by this.'],
+      ['Nothing. It only slows the system down.', 'It is a standard control, and often a requirement for sensitive data.'],
+    ]),
+  Q('m6-q3', 'sd-reliab', 'After an outage, what should a good "blameless" postmortem focus on?', 0,
+    'What happened, why the system or process allowed it, and how to prevent it.', 'The aim is to fix the system, so people feel safe reporting what really happened.', [
+      ['Finding the person to blame so they can be replaced.', 'Blame makes people hide information, and the same failure repeats.'],
+      ['Keeping the cause secret from customers.', 'Transparency builds trust. Hiding the cause damages it.'],
+      ['Skipping it if the outage was short.', 'Short outages can expose the same weaknesses as long ones.'],
+    ]),
+  Q('m6-q4', 'sd-api', 'A payment request times out, and your code retries it. Which design stops the customer being charged twice?', 3,
+    'Send an idempotency key with the request, so repeats are recognised as the same payment.', 'The payment service then returns the original result instead of charging again.', [
+      ['Never retry, and tell the customer to try again later.', 'That loses valid payments and frustrates customers.'],
+      ['Retry immediately and as many times as possible.', 'This is how duplicate charges happen.'],
+      ['Refund every payment that times out.', 'Some of those payments succeeded, and refunding them wrongly costs money.'],
+    ]),
+  PE('m6-pe1', 'pe-dx-edge', 'Check the record is complete',
+    'Each input is a customer record written as name=...; email=...; phone=... . A field is missing when nothing follows its equals sign. If all three are filled in, output exactly COMPLETE. Otherwise output MISSING: followed by the missing field names, in the order name, email, phone, separated by a comma and a space.',
+    [
+      { input: 'name=Ava Lee; email=ava@x.com; phone=555-0101', expected: 'COMPLETE' },
+      { input: 'name=; email=bo@x.com; phone=555-0102', expected: 'MISSING: name' },
+      { input: 'name=Cy Park; email=; phone=', expected: 'MISSING: email, phone' },
+      { input: 'name=; email=; phone=', expected: 'MISSING: name, email, phone' },
+    ]),
+  WR('m6-w1', 'sk-exec', 'Two leaders, two priorities',
+    'At a customer, the head of sales wants the agent to launch with lead qualification, and the head of support wants it to launch with case deflection. They disagree and both have copied you. Write one message to both (about 100 to 150 words).',
+    [
+      rb.goal(/shared|both|goal|customer|common|outcome|thank/i),
+      rb.fact('Acknowledges each leader\'s position fairly', /sales/i),
+      rb.options, rb.rec, rb.next,
+    ],
+    'Thank you both for being so clear. You share the same goal, a better customer experience, so this is a question of order, not of who is right.\n\nSales wants lead qualification first, because it speeds up pipeline. Support wants case deflection first, because it lowers the queue today. Both are good reasons.\n\nThere are two options. Option one is to launch lead qualification first. Option two is to launch case deflection first. Either way the second use case follows within one quarter.\n\nI recommend case deflection first, because the data is cleaner, the success measure is simple, and it frees support time that helps both teams.\n\nNext step: a 30-minute call this week with both of you to confirm the order and the success measures.'),
+];
+
+const m5py = PY('m5-py1', 'py-lists', 'Count the peaks',
+  'The first line is `n`. The second line has `n` integers. A **peak** is a number that is strictly greater than the number just before it and the number just after it (the first and last numbers cannot be peaks). Print how many peaks there are. `n` can be 100000.',
+  [
+    t('6\n1 3 2 4 1 5\n', '2'),
+    t('3\n1 2 1\n', '1'),
+    t('2\n5 1\n', '0', 'With fewer than three numbers there can be no peak.'),
+    t('5\n2 2 2 2 2\n', '0', 'Equal neighbours do not count: a peak must be strictly greater.'),
+    t('5\n1 3 3 1 0\n', '0', 'A flat top of two equal numbers is not a peak.'),
+    t(`100000\n${Array.from({ length: 100000 }, (_, i) => (i % 2 ? 2 : 1)).join(' ')}\n`, '49999', 'Large input. One pass is enough.'),
+  ],
+  'n = int(input())\nnums = list(map(int, input().split()))\ncount = 0\nfor i in range(1, n - 1):\n    if nums[i] > nums[i - 1] and nums[i] > nums[i + 1]:\n        count += 1\nprint(count)\n');
+
+const m6py = PY('m6-py1', 'py-strings', 'Compress the runs',
+  'Read one line of lowercase letters. Replace every **run** of the same letter with the letter followed by the length of the run. Letters that are not next to each other are separate runs. For example `aaabcc` becomes `a3b1c2`. The line can have up to 100000 letters.',
+  [
+    t('aaabcc\n', 'a3b1c2'),
+    t('abc\n', 'a1b1c1'),
+    t('a\n', 'a1'),
+    t('aabbaa\n', 'a2b2a2', 'The two runs of "a" are not adjacent, so they stay separate.'),
+    t(`${'a'.repeat(100000)}\n`, 'a100000', 'Large input with a long run.'),
+    t(`${'ab'.repeat(50000)}\n`, 'a1b1'.repeat(50000), 'Large input with many runs. Build the answer in a list and join once.'),
+  ],
+  's = input().strip()\nout = []\ni = 0\nwhile i < len(s):\n    j = i\n    while j < len(s) and s[j] == s[i]:\n        j += 1\n    out.append(s[i] + str(j - i))\n    i = j\nprint("".join(out))\n');
+
+const m5sql = SQ('m5-sql1', 'sqw-second', 'The northernmost station in each state', 'stations',
+  'For every **state with at least 2 stations**, return the `state`, the `city` of its most northern station (the largest `lat_n`) and that `lat_n`. Order by state.',
+  'WITH r AS (\n  SELECT state, city, lat_n,\n         ROW_NUMBER() OVER (PARTITION BY ) AS rn,\n         COUNT(*) OVER (PARTITION BY state) AS cnt\n  FROM stations\n)\nSELECT state, city, lat_n\nFROM r\n',
+  'WITH r AS (SELECT state, city, lat_n, ROW_NUMBER() OVER (PARTITION BY state ORDER BY lat_n DESC) AS rn, COUNT(*) OVER (PARTITION BY state) AS cnt FROM stations) SELECT state, city, lat_n FROM r WHERE rn = 1 AND cnt >= 2 ORDER BY state;');
+
+const m6sql = SQ('m6-sql1', 'sqf-having2', 'Accounts above the average', 'sales',
+  'Take each account\'s total of **Closed Won** deals (accounts with none are left out). Return the account `name` and that `total` for accounts whose total is **above the average** of those account totals. Highest total first.',
+  'WITH t AS (\n  SELECT a.name, SUM(d.amount) AS total\n  FROM accounts a\n  JOIN deals d ON d.account_id = a.id\n  WHERE d.stage = \'Closed Won\'\n  GROUP BY a.id, a.name\n)\nSELECT name, total\nFROM t\n',
+  'WITH t AS (SELECT a.name, SUM(d.amount) AS total FROM accounts a JOIN deals d ON d.account_id = a.id WHERE d.stage = \'Closed Won\' GROUP BY a.id, a.name) SELECT name, total FROM t WHERE total > (SELECT AVG(total) FROM t) ORDER BY total DESC;');
+
 const pick = (arr, ids) => ids.map((id) => arr.find((q) => q.id === id));
 
 const SHAPE = 'Built to match the exam as candidates describe it: 4 multiple choice, 1 SQL problem, 1 coding problem, 1 prompt-engineering problem and 1 written reply, scored out of 170 points. About 90 minutes.';
@@ -364,6 +485,8 @@ export const MOCKS = [
   { id: 'mock-2', title: 'Exam replica 2', minutes: 90, blurb: 'A different set, same shape. Take it after you have studied what replica 1 showed you.', questions: [...pick(m2, ['m2-q9', 'm2-q10', 'm2-q11', 'm2-q12']), ...pick(m2, ['m2-sql1', 'm2-py1', 'm2-pe1', 'm2-w1'])] },
   { id: 'mock-3', title: 'Exam replica 3', minutes: 90, blurb: 'Extra practice, same shape, new questions.', questions: [...m3.slice(0, 4), ...pick(m1, ['m1-sql2', 'm1-py2']), m3[4], m3[5]] },
   { id: 'mock-4', title: 'Exam replica 4', minutes: 90, blurb: 'Extra practice, same shape, new questions.', questions: [...m4.slice(0, 4), ...pick(m2, ['m2-sql2', 'm2-py2']), m4[4], m4[5]] },
+  { id: 'mock-5', title: 'Exam replica 5', minutes: 90, blurb: 'All new questions in every section. The SQL problem uses window functions and the coding problem is array navigation.', questions: [...m5.slice(0, 4), m5sql, m5py, m5[4], m5[5]] },
+  { id: 'mock-6', title: 'Exam replica 6', minutes: 90, blurb: 'All new questions in every section. The SQL problem uses a CTE and a subquery and the coding problem is string handling.', questions: [...m6.slice(0, 4), m6sql, m6py, m6[4], m6[5]] },
 ];
 
 // Multiple-choice questions not used in a replica. The review sprint draws on these as well.

@@ -165,7 +165,11 @@ export function explainSqlError(message) {
     steps.push("Text values need single quotes: `'Retail'`, not `Retail`.");
   } else if ((x = m.match(/no such table: (.+)/))) {
     lead = `There is no table called \`${x[1]}\`.`;
-    steps.push('The tables here are `accounts`, `reps` and `deals`.');
+    steps.push('Open "Tables in this practice set" above the editor to see the exact table names, and check the spelling.');
+  } else if (/misuse of window function|window functions? (is|are) not allowed/i.test(m)) {
+    lead = 'A window function (anything with `OVER`) is used where it is not allowed.';
+    steps.push('You cannot put a window function in `WHERE`, `GROUP BY` or `HAVING`, and you cannot wrap it directly in `MAX` or `SUM` in the same `SELECT`.');
+    steps.push('Calculate it in a subquery or a `WITH` block, then filter or summarize in the outer query.');
   } else if (/ambiguous column name/.test(m)) {
     lead = 'A column name exists in more than one table.';
     steps.push('Put the table alias in front of it, like `a.id` or `d.id`.');

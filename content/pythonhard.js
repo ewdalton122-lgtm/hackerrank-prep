@@ -1,4 +1,4 @@
-// Harder exam-style Python problems (Coding set 6). Same format as pythonio.js.
+// Exam-level Python problems (Coding set 6). Same format as pythonio.js. The first four are required; the rest are optional stretch practice, harder than Jack's recommended list.
 // These match the reported exam topics: array navigation, string handling, sorting and greedy choices.
 // They have large hidden inputs, so a slow approach will time out the way it would on HackerRank.
 // Every problem is written from scratch. Visible tests teach; hidden tests check edge cases and speed.
@@ -70,7 +70,7 @@ export const ioSet6 = [
     'n = int(input())\nbookings = []\nfor _ in range(n):\n    s, e = map(int, input().split())\n    bookings.append([s, e])\nbookings.sort()\nmerged = []\nfor s, e in bookings:\n    if merged and s <= merged[-1][1]:\n        merged[-1][1] = max(merged[-1][1], e)\n    else:\n        merged.append([s, e])\nfor s, e in merged:\n    print(s, e)\n', [
       { t: 'p', text: 'Once the bookings are sorted by start, any booking that overlaps must be touching the **most recent** merged one. That is why you only ever compare with `merged[-1]`.' },
       { t: 'warn', text: 'Use `max(...)` when extending the end. A short booking sitting inside a long one would otherwise shrink it.' },
-    ]),
+    ], true),
 
   P('io-freqsort', 'Sort letters by popularity', 40, 'Count with a dictionary, then sort with two rules.',
     'Read one line of text. Ignore spaces. Count how often each letter appears. Print the letters from most frequent to least, each followed by its count, separated by spaces (for example `a3 n2 b1`). Letters with the same count are listed alphabetically.', [
@@ -108,7 +108,7 @@ export const ioSet6 = [
     's = input().strip()\nlast = {}\nstart = 0\nbest = 0\nfor i, ch in enumerate(s):\n    if ch in last and last[ch] >= start:\n        start = last[ch] + 1\n    last[ch] = i\n    best = max(best, i - start + 1)\nprint(best)\n', [
       { t: 'p', text: 'A **sliding window** is a range of the text that grows on the right and shrinks on the left, so every character is looked at only a few times.' },
       { t: 'analogy', text: 'It is a highlighter moving across a line of text: stretch it on the right while everything inside is different, and slide the left edge past the old copy when a repeat shows up.' },
-    ]),
+    ], true),
 
   P('io-kadane', 'Best stretch of profit', 50, 'Array navigation: the biggest total in a row of numbers.',
     'The first line is `n`. The second line has `n` integers, which may be negative: the profit or loss of each day. Print the biggest total you can get from a stretch of **consecutive** days (at least one day). `n` can be 100000.', [
@@ -126,7 +126,7 @@ export const ioSet6 = [
     'n = int(input())\nnums = list(map(int, input().split()))\ncurrent = best = nums[0]\nfor x in nums[1:]:\n    current = max(x, current + x)\n    best = max(best, current)\nprint(best)\n', [
       { t: 'p', text: 'The question at each day is: "Is it better to carry on with the stretch I had, or to throw it away and start again from here?" If the stretch so far is negative, throw it away.' },
       { t: 'warn', text: 'Do not start `best` at 0. If every number is negative, the correct answer is negative, and a starting value of 0 would hide it.' },
-    ]),
+    ], true),
 
   P('io-zip', 'Zip two words', 30, 'String building: take turns, then add what is left.',
     'Two lines each hold a word (either may be empty). Build a new word by taking one letter from the first word, then one from the second, and so on. When one word runs out, add the rest of the other. Print the result. Each word can have 50000 letters.', [
@@ -160,5 +160,9 @@ export const ioSet6 = [
     'greed = sorted(map(int, input().split()))\ncookies = sorted(map(int, input().split()))\ni = 0\nfor c in cookies:\n    if i < len(greed) and greed[i] <= c:\n        i += 1\nprint(i)\n', [
       { t: 'p', text: 'The greedy idea: give each cookie to the **least demanding** child it can satisfy. Large cookies are never wasted on a child who would have been happy with a small one.' },
       { t: 'tip', text: '`input().split()` on an empty line gives an empty list, so `sorted(map(int, ...))` is fine with no cookies.' },
-    ], true),
+    ]),
 ];
+
+// Required problems first, then the optional stretch problems (harder than the problems on Jack's list).
+ioSet6.sort((a, b) => (a.optional ? 1 : 0) - (b.optional ? 1 : 0));
+ioSet6.forEach((i) => { if (i.optional) i.blurb = `Stretch: ${i.blurb}`; });

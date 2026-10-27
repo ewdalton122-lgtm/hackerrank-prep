@@ -6,7 +6,7 @@ import { systems } from './systems.js';
 import { practice } from './practice.js';
 import { sqlDrills } from './sqlpractice.js';
 import { sqf, sqa } from './sqlmore.js';
-import { sqw } from './sqlwindows.js';
+import { sqw, sqj } from './sqlwindows.js';
 import { promptMore } from './promptdrills.js';
 import { interview } from './interview.js';
 import { pythonMore } from './pythonmore.js';
@@ -35,6 +35,15 @@ const codingStrategy = {
       '**Test edges:** empty input, one item, duplicates, zeros, negatives.',
     ] },
     { t: 'analogy', text: 'Constraints are like a term sheet: n up to 1,000 means a simple double loop is fine; n up to 100,000 means you need a sort or a dictionary.' },
+    { t: 'h', text: 'The common gotchas (from a study guide written by a past test-taker)' },
+    { t: 'list', items: [
+      '**Misreading the input format.** Check for several test cases in one input, trailing spaces and unusual separators.',
+      '**Missed edge cases.** Empty lists, a single item and duplicate values.',
+      '**Off-by-one errors** in loops and positions. Positions start at 0.',
+      '**Overflow.** In Java you need a `long` once values pass about 2 billion. Python integers never overflow, which is one reason Python is the safer choice here.',
+      '**Time limit exceeded.** A brute-force solution on a big input. Check the constraints before you code.',
+    ] },
+    { t: 'tip', text: 'The reported coding question is "array navigation, string concatenation or substring, sorting, or a greedy algorithm". There is no big-O rule, but a solution that is too slow will fail the large cases. The practice list in that guide tops out around "sort the rows, then check the columns", so sets 1 to 5 here are the core and set 6 is a stretch.' },
   ],
   quiz: [
     {
@@ -72,9 +81,9 @@ export const STAGES = [
     id: 's2', num: 1, title: 'SQL foundations', roles: ['ds', 'fde'],
     summary: 'Filtering, text, NULLs, grouping and joins, with graded practice on several small databases. The SQL version of what you already do in Excel.',
     items: (() => {
-      const by = Object.fromEntries([...sql, ...sqf].map((i) => [i.id, i]));
+      const by = Object.fromEntries([...sql, ...sqf, ...sqj].map((i) => [i.id, i]));
       const order = ['sql-select', 'sqf-distinct', 'sql-filter', 'sqf-order', 'sqf-like', 'sqf-null', 'sqf-strings', 'sqf-concat', 'sqf-math', 'sqf-case',
-        'sql-group', 'sqf-countd', 'sql-having', 'sqf-having2', 'sql-join', 'sqf-multijoin', 'sql-left', 'sqf-selfjoin', 'sqf-union', 'sqf-in', 'sqf-exists'];
+        'sql-group', 'sqf-countd', 'sql-having', 'sqf-having2', 'sql-join', 'sqf-multijoin', 'sql-left', 'sqj-right', 'sqf-selfjoin', 'sqf-union', 'sqf-in', 'sqf-exists', 'sqj-scalar'];
       return [...order.map((id) => by[id]), ...sql.filter((i) => i.optional)];
     })(),
   },
@@ -165,6 +174,8 @@ export const STAGES = [
       mockItem('mock-2', 'Exam replica 2: a different set', 90, 'Take it after reviewing replica 1. Aim to beat the pass mark by at least 10 points.'),
       opt(mockItem('mock-3', 'Exam replica 3: extra practice', 90, 'Same shape, new questions. Use it if you want another full attempt.')),
       opt(mockItem('mock-4', 'Exam replica 4: extra practice', 90, 'Same shape, new questions.')),
+      opt(mockItem('mock-5', 'Exam replica 5: extra practice', 90, 'All new questions. Window-function SQL and array navigation coding.')),
+      opt(mockItem('mock-6', 'Exam replica 6: extra practice', 90, 'All new questions. CTE and subquery SQL and string-handling coding.')),
       opt(mockItem('mock-sprint', 'Review sprint (as many times as you like)', 20, 'Twelve multiple-choice questions drawn from lessons you have studied, weighted toward the ones you got wrong.')),
       r('sim-1', 'Retake the HackerRank sample test', 45, 'Compare with your first attempt.', [
         { label: 'HackerRank sample test', url: 'https://www.hackerrank.com/test/sample', use: 'Full screen, timed, no notes.' },

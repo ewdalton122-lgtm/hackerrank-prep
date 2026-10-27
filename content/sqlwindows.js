@@ -21,6 +21,11 @@ export const sqw = [
     prompt: 'Return every employee whose salary is among the **top 2 distinct salaries** in their department: `dept_id`, `name`, `salary`. Everyone who ties at a kept salary is included. Order by `dept_id`, then salary highest first, then name.',
     starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         DENSE_RANK() OVER (PARTITION BY ) AS r\n  FROM employees\n)\n',
     solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS r FROM employees) WHERE r <= 2 ORDER BY dept_id, salary DESC, name;',
+    traps: [
+      { has: /ROW_NUMBER/i, say: '`ROW_NUMBER` gives every row its own number, so two people tied on salary get different numbers and one can be cut. Use `DENSE_RANK`, where ties share a number.' },
+      { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY dept_id` the ranking runs over the whole company instead of restarting in each department.' },
+      { lacks: /salary\s+DESC/i, say: 'sort the salary `DESC` inside the window so the highest salary gets rank 1.' },
+    ],
     hints: ['Fill the window: `PARTITION BY dept_id ORDER BY salary DESC`.', 'Outside the parentheses keep the rows with `WHERE r <= 2`.', 'Finish with `ORDER BY dept_id, salary DESC, name`. Department 4 has two people tied at one salary, and both should appear.'],
   }, [
     {
@@ -40,6 +45,12 @@ export const sqw = [
     prompt: 'For every **Shipped** order, return `customer_id`, the order `id`, `order_date`, and `days_to_next`: the days from this order to the same customer\'s next Shipped order (`NULL` for their last one). Order by `customer_id`, then `order_date`.',
     starter: "SELECT customer_id, id, order_date,\n       DATEDIFF(LEAD(order_date) OVER (PARTITION BY ), order_date) AS days_to_next\nFROM orders\nWHERE status = 'Shipped'\n",
     solution: "SELECT customer_id, id, order_date, DATEDIFF(LEAD(order_date) OVER (PARTITION BY customer_id ORDER BY order_date), order_date) AS days_to_next FROM orders WHERE status = 'Shipped' ORDER BY customer_id, order_date;",
+    traps: [
+      { has: /\bLAG\s*\(/i, say: '`LAG` looks at the previous row. This task wants the next order, so use `LEAD`.' },
+      { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY customer_id`, one customer\'s last order borrows the next customer\'s first date.' },
+      { has: /DATEDIFF\s*\(\s*order_date\s*,\s*LEAD/i, say: '`DATEDIFF(a, b)` is a minus b. Put the later date (the `LEAD` one) first so the answer is positive.' },
+      { lacks: /Shipped/i, say: 'only Shipped orders count. Filter with `WHERE status = \'Shipped\'`.' },
+    ],
     hints: ['Fill the window with `PARTITION BY customer_id ORDER BY order_date`.', '`DATEDIFF(next_date, order_date)` is positive when the next date is later.', 'End with `ORDER BY customer_id, order_date`.'],
   }, [
     {
@@ -60,6 +71,12 @@ export const sqw = [
     prompt: 'For **Closed Won** deals, return `id`, `close_date`, `amount`, and `moving_avg`: the average amount of this deal and the two deals before it (by close date), rounded to a whole number with `ROUND(..., 0)`. Order by `close_date`.',
     starter: "SELECT id, close_date, amount,\n       ROUND(AVG(amount) OVER (ORDER BY close_date ), 0) AS moving_avg\nFROM deals\nWHERE stage = 'Closed Won'\n",
     solution: "SELECT id, close_date, amount, ROUND(AVG(amount) OVER (ORDER BY close_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0) AS moving_avg FROM deals WHERE stage = 'Closed Won' ORDER BY close_date;",
+    traps: [
+      { lacks: /(ROWS|RANGE)\s+BETWEEN/i, say: 'with no frame, `AVG` covers every earlier row (a running average). Add `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`.' },
+      { has: /RANGE\s+BETWEEN/i, say: '`RANGE` groups rows with equal sort values. A moving average over rows wants `ROWS`.' },
+      { has: /\b[13]\s+PRECEDING/i, say: 'the current row counts too, so three rows means `2 PRECEDING AND CURRENT ROW`.' },
+      { lacks: /ROUND/i, say: 'the task asks for a whole number. Wrap the average in `ROUND(..., 0)`.' },
+    ],
     hints: ['Without a frame the average covers every earlier row. Add a frame after the `ORDER BY`.', 'The frame is `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`.', 'Finish with `ORDER BY close_date` outside the window as well.'],
   }, [
     {
@@ -78,6 +95,12 @@ export const sqw = [
     prompt: 'For **Closed Won** deals, return the rep `name`, `close_date`, `amount`, and `first_amount`: the amount of that rep\'s earliest Closed Won deal. Order by `name`, then `close_date`.',
     starter: "SELECT r.name, d.close_date, d.amount,\n       FIRST_VALUE(d.amount) OVER (PARTITION BY ) AS first_amount\nFROM deals d\nJOIN reps r ON r.id = d.rep_id\nWHERE d.stage = 'Closed Won'\n",
     solution: "SELECT r.name, d.close_date, d.amount, FIRST_VALUE(d.amount) OVER (PARTITION BY d.rep_id ORDER BY d.close_date) AS first_amount FROM deals d JOIN reps r ON r.id = d.rep_id WHERE d.stage = 'Closed Won' ORDER BY r.name, d.close_date;",
+    traps: [
+      { has: /LAST_VALUE/i, say: 'this task wants the **first** deal. `LAST_VALUE` with the default frame only returns the current row.' },
+      { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY d.rep_id` the "first" deal is the first across all reps, not each rep\'s own.' },
+      { lacks: /OVER\s*\([^)]*ORDER\s+BY/i, say: '`FIRST_VALUE` needs `ORDER BY d.close_date` inside `OVER (...)` so it knows which row is first.' },
+      { lacks: /Closed Won/i, say: 'only Closed Won deals count. Filter with `WHERE d.stage = \'Closed Won\'`.' },
+    ],
     hints: ['Fill the window with `PARTITION BY d.rep_id ORDER BY d.close_date`.', 'Each rep restarts, so the first row for each rep shows its own amount twice.', 'Finish with `ORDER BY r.name, d.close_date`.'],
   }, [
     {
@@ -100,6 +123,11 @@ export const sqw = [
     prompt: 'Using each customer\'s revenue from **Shipped** orders (customers with none are left out), split customers into 3 spend tiers with `NTILE(3)`, tier 1 being the biggest spenders. Return `name`, `revenue`, `tier`. Break revenue ties by name inside the window. Order by `tier`, then revenue highest first, then name.',
     starter: "WITH rev AS (\n  SELECT c.name, SUM(i.qty * p.price) AS revenue\n  FROM customers c\n  JOIN orders o ON o.customer_id = c.id\n  JOIN order_items i ON i.order_id = o.id\n  JOIN products p ON p.id = i.product_id\n  WHERE o.status = 'Shipped'\n  GROUP BY c.id, c.name\n)\nSELECT name, revenue,\n       NTILE(3) OVER (ORDER BY ) AS tier\nFROM rev\n",
     solution: "WITH rev AS (SELECT c.name, SUM(i.qty * p.price) AS revenue FROM customers c JOIN orders o ON o.customer_id = c.id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'Shipped' GROUP BY c.id, c.name) SELECT name, revenue, NTILE(3) OVER (ORDER BY revenue DESC, name) AS tier FROM rev ORDER BY tier, revenue DESC, name;",
+    traps: [
+      { lacks: /NTILE\s*\(\s*3\s*\)/i, say: 'three tiers means `NTILE(3)`.' },
+      { lacks: /ORDER\s+BY\s+revenue\s+DESC/i, say: 'tier 1 must be the biggest spenders, so the window needs `ORDER BY revenue DESC`.' },
+      { lacks: /ORDER\s+BY\s+tier/i, say: 'sort the final result by `tier`, then revenue highest first, then name.' },
+    ],
     hints: ['The revenue per customer is already built in the `rev` block.', 'Fill the window with `ORDER BY revenue DESC, name`.', 'Finish with `ORDER BY tier, revenue DESC, name`.'],
   }, [
     {
@@ -118,6 +146,11 @@ export const sqw = [
     prompt: 'For each customer with **two or more Shipped orders**, return `name` and `longest_gap`: the most days between two consecutive Shipped orders. Customers with only one Shipped order are left out. Order by `longest_gap` highest first, then name.',
     starter: "WITH g AS (\n  SELECT c.name,\n         DATEDIFF(o.order_date, LAG(o.order_date) OVER (PARTITION BY )) AS gap\n  FROM orders o\n  JOIN customers c ON c.id = o.customer_id\n  WHERE o.status = 'Shipped'\n)\nSELECT name, MAX(gap) AS longest_gap\nFROM g\n",
     solution: "WITH g AS (SELECT c.name, DATEDIFF(o.order_date, LAG(o.order_date) OVER (PARTITION BY o.customer_id ORDER BY o.order_date)) AS gap FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.status = 'Shipped') SELECT name, MAX(gap) AS longest_gap FROM g GROUP BY name HAVING MAX(gap) IS NOT NULL ORDER BY longest_gap DESC, name;",
+    traps: [
+      { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY o.customer_id`, each customer\'s first order looks back at the previous customer\'s last order and creates a fake gap.' },
+      { lacks: /(HAVING|IS\s+NOT\s+NULL|gap\s*>)/i, say: 'a customer with one Shipped order has a `NULL` gap. Leave them out, for example with `HAVING MAX(gap) IS NOT NULL`.' },
+      { lacks: /Shipped/i, say: 'only Shipped orders count. Filter with `WHERE o.status = \'Shipped\'`.' },
+    ],
     hints: ['Fill the window with `PARTITION BY o.customer_id ORDER BY o.order_date`.', 'Group the outer query: `GROUP BY name`.', 'Remove single-order customers with `HAVING MAX(gap) IS NOT NULL`, then `ORDER BY longest_gap DESC, name`.'],
   }),
 
@@ -130,6 +163,11 @@ export const sqw = [
     prompt: 'For **Shipped** orders, return each `month` (like `2026-03`), its `revenue` (qty times price), and `cum_pct`: the running total of revenue up to and including that month as a percent of all Shipped revenue, rounded to 1 decimal place. Order by month.',
     starter: "WITH m AS (\n  SELECT SUBSTR(o.order_date, 1, 7) AS month,\n         SUM(i.qty * p.price) AS revenue\n  FROM orders o\n  JOIN order_items i ON i.order_id = o.id\n  JOIN products p ON p.id = i.product_id\n  WHERE o.status = 'Shipped'\n  GROUP BY month\n)\nSELECT month, revenue,\n       ROUND(100.0 * SUM(revenue) OVER (ORDER BY month) / , 1) AS cum_pct\nFROM m\n",
     solution: "WITH m AS (SELECT SUBSTR(o.order_date, 1, 7) AS month, SUM(i.qty * p.price) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'Shipped' GROUP BY month) SELECT month, revenue, ROUND(100.0 * SUM(revenue) OVER (ORDER BY month) / SUM(revenue) OVER (), 1) AS cum_pct FROM m ORDER BY month;",
+    traps: [
+      { lacks: /OVER\s*\(\s*\)/i, say: 'the bottom of the fraction is the total of **all** months. Use `SUM(revenue) OVER ()` with empty parentheses.' },
+      { has: /\b100\s*\*/i, say: 'with whole numbers, SQL can drop the decimals in a division. Write `100.0 *` instead of `100 *`.' },
+      { lacks: /ROUND/i, say: 'the task asks for 1 decimal place: `ROUND(..., 1)`.' },
+    ],
     hints: ['The top part of the division (the running total) is already written. You need the bottom part: the total of all months.', 'Use `SUM(revenue) OVER ()`. Empty parentheses mean every row is in one window.', 'Finish with `ORDER BY month`. The last month should show 100.'],
   }),
 
@@ -141,6 +179,76 @@ export const sqw = [
     prompt: 'For each rep, return the rep `name`, and the `id` and `amount` of their **second largest deal** (any stage). Order by name.',
     starter: 'SELECT name, id, amount\nFROM (\n  SELECT r.name, d.id, d.amount,\n         ROW_NUMBER() OVER (PARTITION BY ) AS rn\n  FROM deals d\n  JOIN reps r ON r.id = d.rep_id\n)\n',
     solution: 'SELECT name, id, amount FROM (SELECT r.name, d.id, d.amount, ROW_NUMBER() OVER (PARTITION BY d.rep_id ORDER BY d.amount DESC) AS rn FROM deals d JOIN reps r ON r.id = d.rep_id) WHERE rn = 2 ORDER BY name;',
+    traps: [
+      { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY d.rep_id` you get one second-place deal for the whole company, not one per rep.' },
+      { lacks: /amount\s+DESC/i, say: 'sort the amount `DESC` inside the window so rank 1 is the largest deal.' },
+      { has: /<=\s*2|rn\s*=\s*1|rn\s*<\s*3/i, say: 'you want only the second row of each group: `rn = 2`.' },
+    ],
     hints: ['Fill the window with `PARTITION BY d.rep_id ORDER BY d.amount DESC`.', 'Filter outside with `WHERE rn = 2`.', 'End with `ORDER BY name`.'],
   }),
+];
+
+// ---------------------------------------------------------------- Topics from Jack's guide that were missing
+// "Know your joins: INNER, LEFT, RIGHT, FULL OUTER" and "subqueries within a SELECT query".
+export const sqj = [
+  mk('sqj-right', 'RIGHT JOIN and FULL OUTER JOIN', 45, 'The two joins people forget.', 'staff', [
+    { t: 'p', text: 'You already know `INNER JOIN` (only matches) and `LEFT JOIN` (every row on the left, matches from the right). The other two complete the set:' },
+    { t: 'table', head: ['Join', 'Keeps', 'Unmatched side shows'], rows: [
+      ['`INNER JOIN`', 'Only rows that match on both sides', 'Nothing. Those rows are dropped.'],
+      ['`LEFT JOIN`', 'Every row from the left table', '`NULL` for the right table\'s columns'],
+      ['`RIGHT JOIN`', 'Every row from the right table', '`NULL` for the left table\'s columns'],
+      ['`FULL OUTER JOIN`', 'Every row from both tables', '`NULL` on whichever side has no match'],
+    ] },
+    { t: 'code', text: 'SELECT d.name, COUNT(e.id) AS headcount\nFROM employees e\nRIGHT JOIN departments d ON d.id = e.dept_id\nGROUP BY d.id, d.name;' },
+    { t: 'p', text: '`A RIGHT JOIN B` gives the same rows as `B LEFT JOIN A`. Many people simply swap the table order and always use `LEFT JOIN`.' },
+    { t: 'warn', text: 'MySQL has **no** `FULL OUTER JOIN`. The usual workaround is a `LEFT JOIN` combined with a `RIGHT JOIN` using `UNION`. The practice database here supports `FULL OUTER JOIN`, but expect the exam to be MySQL.' },
+    { t: 'tip', text: 'Count with `COUNT(e.id)`, not `COUNT(*)`. `COUNT(*)` counts the department\'s row even when no employee matched, so Legal would show 1 instead of 0.' },
+  ], {
+    prompt: 'Return every department `name` and its `headcount` (number of employees), **including departments with no employees**. Highest headcount first, then name A to Z.',
+    starter: 'SELECT d.name, COUNT() AS headcount\nFROM employees e\nJOIN departments d ON d.id = e.dept_id\n',
+    solution: 'SELECT d.name, COUNT(e.id) AS headcount FROM employees e RIGHT JOIN departments d ON d.id = e.dept_id GROUP BY d.id, d.name ORDER BY headcount DESC, d.name;',
+    traps: [
+      { lacks: /(RIGHT|LEFT|FULL)\s+(OUTER\s+)?JOIN/i, say: 'a plain `JOIN` drops departments with no employees. Use `RIGHT JOIN departments` (or put departments first and use `LEFT JOIN`).' },
+      { has: /COUNT\s*\(\s*\*\s*\)/i, say: '`COUNT(*)` counts the department row itself even when no employee matched, so Legal shows 1. Count a column from the employees side: `COUNT(e.id)`.' },
+    ],
+    hints: ['Change `JOIN` to `RIGHT JOIN`: the departments table is on the right, and every department must stay.', 'Count `e.id` rather than `*`, so a department with no employees counts 0.', 'Add `GROUP BY d.id, d.name` and `ORDER BY headcount DESC, d.name`.'],
+  }, [
+    {
+      q: 'Table A has 5 rows, table B has 4 rows, and 3 rows match. How many rows does A FULL OUTER JOIN B return (assuming each row matches at most once)?',
+      options: ['3', '5', '6', '9'],
+      answer: 2,
+      explain: ['That is the INNER JOIN result.', 'That is the LEFT JOIN result: all 5 rows of A.', 'Correct. 3 matched, plus 2 left over from A, plus 1 left over from B, gives 6.', 'That would be every possible pairing (a CROSS JOIN is 5 x 4 = 20), and 9 is just 5 + 4.'],
+    },
+    {
+      q: 'The exam database is MySQL. How do you get the effect of a FULL OUTER JOIN there?',
+      options: ['Write FULL JOIN instead', 'Combine a LEFT JOIN and a RIGHT JOIN with UNION', 'Use INNER JOIN twice', 'It is impossible'],
+      answer: 1,
+      explain: ['MySQL does not accept FULL JOIN either.', 'Correct. The two joins together cover every row from both sides, and UNION removes the duplicated matches.', 'That only returns rows that match.', 'The UNION workaround does it.'],
+    },
+  ]),
+
+  mk('sqj-scalar', 'A subquery inside SELECT', 50, 'Put a calculated number next to every row.', 'staff', [
+    { t: 'p', text: 'A subquery that returns **one value** can sit inside the `SELECT` list, like an extra column. If it mentions the outer row, it is **correlated**: it re-runs for each row.' },
+    { t: 'code', text: 'SELECT e.name, e.salary,\n       (SELECT AVG(e2.salary)\n        FROM employees e2\n        WHERE e2.dept_id = e.dept_id) AS dept_avg\nFROM employees e;' },
+    { t: 'p', text: 'Here `e2.dept_id = e.dept_id` links the inner query to the current outer row `e`, so each person sees the average for **their own** department.' },
+    { t: 'tip', text: 'Give the inner table a different alias (`e2`) so SQL can tell the inner and outer copies apart.' },
+    { t: 'warn', text: 'The subquery must return exactly one row and one column. A subquery with no `WHERE` link would return the same company-wide value on every row.' },
+    { t: 'analogy', text: 'It is Excel\'s `=AVERAGEIF(dept_range, this_row_dept, salary_range)` filled down a column.' },
+  ], {
+    prompt: 'Return each employee\'s `name`, `salary`, and `dept_avg`: the average salary of their **department**, rounded to a whole number. Do it with a subquery in the `SELECT` list. Order by name.',
+    starter: 'SELECT e.name, e.salary,\n       ROUND((SELECT AVG() FROM employees e2 WHERE ), 0) AS dept_avg\nFROM employees e\n',
+    solution: 'SELECT e.name, e.salary, ROUND((SELECT AVG(e2.salary) FROM employees e2 WHERE e2.dept_id = e.dept_id), 0) AS dept_avg FROM employees e ORDER BY e.name;',
+    traps: [
+      { lacks: /e2?\.dept_id\s*=\s*e2?\.dept_id/i, say: 'the inner query needs a link to the outer row, like `WHERE e2.dept_id = e.dept_id`. Without it every row shows the company-wide average.' },
+      { lacks: /ROUND/i, say: 'the task asks for a whole number: wrap the subquery in `ROUND(..., 0)`.' },
+    ],
+    hints: ['The inner query averages `e2.salary` from a second copy of the table: `SELECT AVG(e2.salary) FROM employees e2 ...`.', 'Link it to the outer row with `WHERE e2.dept_id = e.dept_id`.', 'Wrap the whole subquery in `ROUND(..., 0)` and finish with `ORDER BY e.name`.'],
+  }, [
+    {
+      q: 'What does "correlated" mean for a subquery?',
+      options: ['It uses JOIN', 'It refers to a column of the outer query, so it is evaluated per outer row', 'It returns more than one column', 'It runs only once, before the outer query'],
+      answer: 1,
+      explain: ['A correlated subquery does not need a JOIN.', 'Correct. The reference to the outer row (like e.dept_id) is what makes it correlated.', 'In a SELECT list it must return a single value.', 'A subquery that runs once is uncorrelated.'],
+    },
+  ]),
 ];
