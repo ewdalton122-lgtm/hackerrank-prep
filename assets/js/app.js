@@ -1,4 +1,4 @@
-import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signOut, fetchInternal, verifyCode, setPart, replaceState, resetAll, syncStatus } from './store.js';
+import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
 import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/curriculum.js';
 import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } from './planner.js';
 import { esc, inline, fmtMin, toast, renderBlocks, feedback } from './ui.js';
@@ -377,4 +377,7 @@ setInterval(() => {
 
 window.addEventListener('hashchange', render);
 render();
-initRemote().then(softRender);
+initRemote().then(() => {
+  if (linkError) { toast('That sign-in link expired or was already used. Send a new email and type the code instead.'); location.hash = '#/settings'; }
+  softRender();
+});

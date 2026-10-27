@@ -90,6 +90,8 @@ function merge(a, b) {
 }
 
 // ---------- Supabase ----------
+export let linkError = false;
+
 export async function initRemote() {
   if (!remoteEnabled()) return;
   try {
@@ -104,7 +106,9 @@ export async function initRemote() {
       setTimeout(async () => { if (s) await pull(); else { syncStatus = 'local'; emit(); } }, 0);
     });
     if (session) await pull();
-    if (new URL(location.href).searchParams.has('code')) {
+    const params = new URL(location.href).searchParams;
+    if (params.has('error') || params.has('error_code')) linkError = true;
+    if (params.has('code') || linkError) {
       history.replaceState(null, '', location.pathname + location.hash);
     }
   } catch (e) {
