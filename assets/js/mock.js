@@ -1,6 +1,6 @@
 // Timed mock exams: start screen, exam runner (timer, question navigator), scoring and review.
 // An unfinished exam survives a page refresh (the deadline is stored, not a countdown).
-import { getState, update } from './store.js';
+import { getState, update, reviewMiss } from './store.js';
 import { esc, inline, fmtMin, feedback, copyText, enableTab, toast } from './ui.js';
 import { runPython, pythonReady, runQuery } from './runners.js';
 import { compareSql, diagnoseText, explainSqlError } from './diagnose.js';
@@ -211,6 +211,8 @@ function renderRun(host, mock, run, role) {
     const result = await scoreRun(mock, run, qs, role);
     write(LAST_KEY, result);
     localStorage.removeItem(RUN_KEY);
+    // Every missed multiple-choice question goes onto the review list.
+    qs.filter((q) => q.type === 'mcq' && (result.perQ[q.id]?.score ?? 1) < 1).forEach((q) => reviewMiss(q.id));
     update((s) => {
       (s.mocks ||= []).push({ id: mock.id, title: mock.title, at: result.at, secs: result.secs, pct: result.pct, sections: result.sectionPct, role });
       const p = (s.progress[mock.id] ||= { parts: {}, missed: {}, tries: 0 });

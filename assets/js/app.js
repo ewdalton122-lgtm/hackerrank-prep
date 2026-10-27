@@ -1,17 +1,19 @@
 import { computeReadiness, pct, SECTIONS } from './readiness.js';
 import { REFERENCE } from '../../content/reference.js';
-import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
+import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signInPassword, setPassword, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
 import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/curriculum.js';
 import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } from './planner.js';
 import { esc, inline, fmtMin, toast, renderBlocks, feedback } from './ui.js';
 import { mountQuiz, mountPython, mountSql, mountPrompt, mountWritten } from './components.js';
 import { mountMockPage, mountMockList, stopMock, mockStats, verdict } from './mock.js';
 import { heroHtml, paintHeroes, initMomentum } from './momentum.js';
+import { mountReview, reviewCount } from './review.js';
 
 const app = document.getElementById('app');
 const NAV = [
   ['#/today', 'Today', 'M4 12l8-8 8 8M6 10v9h12v-9'],
   ['#/roadmap', 'Roadmap', 'M4 6h16M4 12h16M4 18h10'],
+  ['#/review', 'Review missed', 'M4 4v6h6M20 20v-6h-6M20 10A8 8 0 006 6.3L4 10M4 14a8 8 0 0014 3.7l2-3.7'],
   ['#/mocks', 'Mock exams', 'M12 6v6l4 2M12 3a9 9 0 100 18 9 9 0 000-18z'],
   ['#/readiness', 'Readiness', 'M4 20V10M10 20V4M16 20v-7M22 20H2'],
   ['#/reference', 'Reference', 'M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM8 4v13'],
@@ -30,7 +32,7 @@ function shell(inner, active) {
     <div class="shell">
       <aside class="side">
         <a class="brand" href="#/today"><span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg></span>Zero to Assessment</a>
-        <nav class="nav">${NAV.map(([h, l, d]) => `<a href="${h}" class="${active === h ? 'active' : ''}">${icon(d)}<span>${l}</span></a>`).join('')}</nav>
+        <nav class="nav">${NAV.map(([h, l, d]) => { const n = h === '#/review' && s.profile ? reviewCount(s) : 0; return `<a href="${h}" class="${active === h ? 'active' : ''}">${icon(d)}<span>${l}</span>${n ? `<em class="navbadge">${n}</em>` : ''}</a>`; }).join('')}</nav>
         <div class="foot">
           ${plan ? `<b>${plan.pct}% complete</b><div class="bar"><i style="width:${plan.pct}%"></i></div><div>${ROLES[s.profile.role].name}</div>` : '<b>Welcome</b>'}
           <div style="margin-top:6px;opacity:.8">${esc(user?.email || '')}</div>
@@ -161,6 +163,7 @@ function viewToday() {
         <p class="small muted" style="margin-top:8px">Minutes studied while a lesson page was open. Grey bars are rest days.</p></div>
       <div class="card"><h2>Weak spots</h2>
         ${weak.length ? `<ul class="items">${weak.map((w) => { const it = findItem(w.id); return `<li><a class="item" href="#/item/${w.id}"><span class="t">${esc(it.title)}<small>${w.n} wrong attempt${w.n > 1 ? 's' : ''}</small></span><span class="m">Review</span></a></li>`; }).join('')}</ul>` : '<p class="muted">Nothing yet. Missed questions will appear here so you can review them.</p>'}
+        ${reviewCount(s) ? `<a class="btn primary" style="margin-top:12px" href="#/review">Review ${reviewCount(s)} missed question${reviewCount(s) === 1 ? '' : 's'}</a>` : ''}
       </div>
     </div>`, '#/today');
   return main;
@@ -275,6 +278,13 @@ function viewItem(id) {
 }
 
 
+// ------------------------------------------------------------------ review missed
+function viewReview() {
+  const main = shell('<div class="pagehead"><h1>Review what I missed</h1><p>Every multiple-choice question you got wrong, in one place. Answer each correctly twice to clear it.</p></div><div id="reviewhost"></div>', '#/review');
+  mountReview(document.getElementById('reviewhost'));
+  return main;
+}
+
 // ------------------------------------------------------------------ mock exams
 function viewMocks() {
   const s = getState();
@@ -377,19 +387,46 @@ async function viewInternal() {
 }
 
 function signInCard(title) {
-  return `<div class="card"><h2>${title}</h2><p class="muted">Enter your email and I'll send a sign-in link. No password needed. Open the link on the device you want to sign in on.</p>
-    <div class="row"><input type="email" id="email" placeholder="you@example.com" style="max-width:320px;margin:0"><button class="btn primary" data-act="signin">Send link</button></div>
+  return `<div class="card"><h2>${title}</h2>
+    <div class="row" style="margin-bottom:10px">
+      <label class="chip"><input type="radio" name="smode" value="link" checked> Email me a link</label>
+      <label class="chip"><input type="radio" name="smode" value="password"> Use my password</label>
+    </div>
+    <p class="muted small" id="smodehelp">Enter your email and I'll send a sign-in link. Open the link on the device you want to sign in on.</p>
+    <div class="row"><input type="email" id="email" placeholder="you@example.com" autocomplete="email" style="max-width:300px;margin:0"><input type="password" id="pw" class="hidden" placeholder="Password" autocomplete="current-password" style="max-width:220px;margin:0"><button class="btn primary" data-act="signin">Send link</button></div>
     <div id="signinMsg" style="margin-top:12px"></div></div>`;
 }
 function bindSignIn() {
-  document.querySelector('[data-act="signin"]')?.addEventListener('click', async () => {
-    const email = document.getElementById('email').value.trim();
-    const msg = document.getElementById('signinMsg');
+  const card = document.querySelector('[data-act="signin"]')?.closest('.card');
+  if (!card) return;
+  const mode = () => card.querySelector('input[name=smode]:checked').value;
+  const sync = () => {
+    const pw = mode() === 'password';
+    card.querySelector('#pw').classList.toggle('hidden', !pw);
+    card.querySelector('[data-act="signin"]').textContent = pw ? 'Sign in' : 'Send link';
+    card.querySelector('#smodehelp').textContent = pw
+      ? 'Password sign-in sends no email, so it always works, even if the email limit has been reached. Set a password once in Settings after your first sign-in.'
+      : "Enter your email and I'll send a sign-in link. Open the link on the device you want to sign in on.";
+  };
+  card.querySelectorAll('input[name=smode]').forEach((r) => r.addEventListener('change', sync));
+  const go = async () => {
+    const email = card.querySelector('#email').value.trim();
+    const msg = card.querySelector('#signinMsg');
     if (!/^\S+@\S+\.\S+$/.test(email)) { msg.innerHTML = feedback('hint', 'Enter a valid email address.'); return; }
+    if (mode() === 'password') {
+      const pw = card.querySelector('#pw').value;
+      if (!pw) { msg.innerHTML = feedback('hint', 'Enter your password.'); return; }
+      msg.innerHTML = '<span class="spinner"></span>Signing in...';
+      try { await signInPassword(email, pw); msg.innerHTML = feedback('ok', 'Signed in.'); }
+      catch (e) { msg.innerHTML = feedback('bad', 'Could not sign in.', [String(e.message || e)]); }
+      return;
+    }
     msg.innerHTML = '<span class="spinner"></span>Sending...';
-    try { await signIn(email); msg.innerHTML = feedback('ok', 'Check your email.', ['Click the link once, on the device you want to sign in on. Links work one time and expire after an hour.']); }
+    try { await signIn(email); msg.innerHTML = feedback('ok', 'Check your email.', ['Click the link once, on the device you want to sign in on. Links work one time and expire after an hour.', 'No email after a few minutes? Check spam, or use your password instead.']); }
     catch (e) { msg.innerHTML = feedback('bad', 'Could not send the link.', [String(e.message || e)]); }
-  });
+  };
+  card.querySelector('[data-act="signin"]').addEventListener('click', go);
+  card.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'radio') go(); });
 }
 
 // ------------------------------------------------------------------ settings
@@ -401,7 +438,9 @@ function viewSettings() {
     ${profileForm(s.profile, s.profile ? 'Update plan' : 'Create plan')}
     <div class="card"><h2>Account and sync</h2>
       ${!remoteEnabled() ? '<p>Your progress is saved in this browser. Connect the site to its account database to sign in and sync across devices (setup steps are in the project notes).</p>'
-        : user ? `<p>Signed in as <b>${esc(user.email)}</b>. Progress syncs automatically.</p><button class="btn" data-act="signout">Sign out</button>`
+        : user ? `<p>Signed in as <b>${esc(user.email)}</b>. Progress syncs automatically.</p><button class="btn" data-act="signout">Sign out</button>
+          <h3>Password</h3><p class="muted small">Set a password so you can sign in on your phone or any device without waiting for an email. At least 8 characters.</p>
+          <div class="row"><input type="password" id="newpw" autocomplete="new-password" placeholder="New password" style="max-width:260px;margin:0"><button class="btn" data-act="setpw">Save password</button></div><div id="pwMsg" style="margin-top:10px"></div>`
           : signInCard('Sign in to sync your progress')}
     </div>
     <div class="card"><h2>Backup</h2>
@@ -413,6 +452,13 @@ function viewSettings() {
   bindProfileForm(() => { location.hash = '#/today'; });
   bindSignIn();
   main.querySelector('[data-act="signout"]')?.addEventListener('click', () => signOut());
+  main.querySelector('[data-act="setpw"]')?.addEventListener('click', async () => {
+    const pw = document.getElementById('newpw').value;
+    const msg = document.getElementById('pwMsg');
+    if (pw.length < 8) { msg.innerHTML = feedback('hint', 'Use at least 8 characters.'); return; }
+    try { await setPassword(pw); document.getElementById('newpw').value = ''; msg.innerHTML = feedback('ok', 'Password saved.', ['Next time, choose "Use my password" when you sign in.']); }
+    catch (e) { msg.innerHTML = feedback('bad', 'Could not save the password.', [String(e.message || e)]); }
+  });
   main.querySelector('[data-act="export"]').onclick = () => {
     const blob = new Blob([JSON.stringify(getState(), null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -440,6 +486,7 @@ async function render() {
   if (a === 'today' || route === '/') return viewToday();
   if (a === 'roadmap') return viewRoadmap();
   if (a === 'item') { if (findItem(b)?.mock) { location.replace(`#/mock/${b}`); return; } return viewItem(b); }
+  if (a === 'review') return viewReview();
   if (a === 'mocks') return viewMocks();
   if (a === 'mock') return viewMock(b);
   if (a === 'readiness') return viewReadiness();
@@ -452,7 +499,7 @@ async function render() {
 // Re-render for global changes (sign-in, restore), but never while a lesson is open or while typing,
 // so learner code and answers are never wiped.
 function softRender() {
-  if (location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/')) return;
+  if (location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/') || location.hash.startsWith('#/review')) return;
   if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
   render();
 }
@@ -460,7 +507,7 @@ subscribe(softRender);
 
 // Study timer: counts seconds while a lesson page is open and visible.
 setInterval(() => {
-  if (document.visibilityState !== 'visible' || !getState().profile || !(location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/'))) return;
+  if (document.visibilityState !== 'visible' || !getState().profile || !(location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/') || location.hash.startsWith('#/review'))) return;
   update((s) => { const k = ymd(); s.log[k] = (s.log[k] || 0) + 10; }, { silent: true });
 }, 10000);
 

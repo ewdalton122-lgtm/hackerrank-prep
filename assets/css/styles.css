@@ -352,3 +352,6 @@ li .extl{margin:-2px 0 8px 52px}
 .hero-chips{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 .hbar{margin-bottom:30px}
 table.res th{white-space:nowrap}
+.nav a .navbadge { margin-left: auto; font-style: normal; font-size: .72rem; font-weight: 700; background: #ffb75d; color: #4a3000; border-radius: 99px; padding: 1px 8px; }
+label.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 99px; background: #fff; cursor: pointer; font-weight: 500; }
+label.chip:has(input:checked) { border-color: var(--brand); background: var(--brand-bg); }

@@ -1,5 +1,5 @@
 // Interactive parts of a lesson: quiz, Python exercise, SQL exercise, prompt drill, written reply.
-import { getState, update, noteMiss } from './store.js';
+import { getState, update, noteMiss, reviewMiss } from './store.js';
 import { esc, inline, feedback, copyText, enableTab, renderBlocks } from './ui.js';
 import { runPython, pythonReady, runQuery } from './runners.js';
 import { explainPyError, diagnosePyTest, diagnoseIo, explainSqlError, compareSql, diagnoseText, lintPrompt } from './diagnose.js';
@@ -47,6 +47,7 @@ export function mountQuiz(host, item, onComplete) {
     } else {
       btn.classList.add('wrong');
       btn.disabled = true;
+      reviewMiss(`${item.id}#${qi}`);
       noteMiss(item.id, `q${qi}`);
       const why = q.explain?.[oi] || 'Not quite. Re-read the lesson section above and try another option.';
       qEl.querySelector('.qfb').innerHTML = feedback('bad', 'Not quite.', [why, 'Pick another option. Reading why a wrong answer is wrong is how this sticks.']);

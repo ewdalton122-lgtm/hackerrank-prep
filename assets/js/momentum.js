@@ -52,6 +52,7 @@ export function xpOf(s) {
     xp += Object.values(p?.q || {}).filter(Boolean).length * 5;
   }
   for (const m of s.mocks || []) xp += m.id === 'mock-sprint' ? 40 : 150;
+  xp += (s.rv || 0) * 3;
   return Math.round(xp);
 }
 const thr = (level) => 50 * level * (level - 1);

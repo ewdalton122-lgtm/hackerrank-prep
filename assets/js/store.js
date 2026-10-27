@@ -18,7 +18,7 @@ export function subscribe(fn) { subs.add(fn); return () => subs.delete(fn); }
 const emit = () => subs.forEach((f) => f());
 
 function blank() {
-  return { v: 1, updatedAt: 0, profile: null, progress: {}, log: {}, notes: {}, mocks: [] };
+  return { v: 1, updatedAt: 0, profile: null, progress: {}, log: {}, notes: {}, mocks: [], review: {}, rv: 0 };
 }
 function load() {
   try { return { ...blank(), ...JSON.parse(localStorage.getItem(KEY) || '{}') }; }
@@ -61,6 +61,25 @@ export function setPart(item, part, value, required) {
   }, { silent: true });
 }
 
+/** Review list: a missed multiple-choice question stays until it has been answered right twice. */
+export function reviewMiss(key) {
+  update((s) => {
+    s.review ||= {};
+    const e = s.review[key];
+    const [id, q] = key.split('#');
+    const base = e ? e.n : (q !== undefined ? (s.progress[id]?.missed?.[`q${q}`] || 0) : 0);
+    s.review[key] = { n: base + 1, right: 0, at: Date.now() };
+  }, { silent: true });
+}
+export function reviewRight(key, n = 1) {
+  update((s) => {
+    s.review ||= {};
+    const e = s.review[key] || { n, right: 0 };
+    s.review[key] = { n: e.n, right: e.right + 1, at: Date.now() };
+    s.rv = (s.rv || 0) + 1;
+  }, { silent: true });
+}
+
 export function noteMiss(itemId, key) {
   update((s) => {
     const p = (s.progress[itemId] ||= { parts: {}, missed: {}, tries: 0 });
@@ -86,6 +105,12 @@ function merge(a, b) {
   });
   const seen = new Set();
   out.mocks = [...(a.mocks || []), ...(b.mocks || [])].filter((m) => { const k = `${m.id}@${m.at}`; if (seen.has(k)) return false; seen.add(k); return true; }).sort((x, y) => x.at - y.at);
+  const rk = new Set([...Object.keys(a.review || {}), ...Object.keys(b.review || {})]);
+  rk.forEach((k) => {
+    const x = a.review?.[k], y = b.review?.[k];
+    out.review[k] = !x ? y : !y ? x : ((x.at || 0) >= (y.at || 0) ? x : y);
+  });
+  out.rv = Math.max(a.rv || 0, b.rv || 0);
   const days = new Set([...Object.keys(a.log || {}), ...Object.keys(b.log || {})]);
   days.forEach((d) => { out.log[d] = Math.max(a.log?.[d] || 0, b.log?.[d] || 0); });
   out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
@@ -173,12 +198,31 @@ export async function verifyCode(email, token) {
   if (error) throw error;
 }
 
+function friendly(error) {
+  const msg = String(error?.message || error || '');
+  if (error?.status === 429 || /rate limit|too many/i.test(msg)) return new Error('Too many sign-in emails were sent recently. Use your password instead, or wait an hour and try again.');
+  if (/invalid login credentials/i.test(msg)) return new Error('That email and password do not match. If you have not set a password yet, use the email link once, then set one in Settings.');
+  return error instanceof Error ? error : new Error(msg);
+}
+
+/** Password sign-in sends no email, so it never hits the email rate limit. */
+export async function signInPassword(email, password) {
+  if (!client) throw new Error('Supabase is not configured yet.');
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw friendly(error);
+}
+export async function setPassword(password) {
+  if (!client || !session) throw new Error('Sign in first.');
+  const { error } = await client.auth.updateUser({ password });
+  if (error) throw friendly(error);
+}
+
 export async function signIn(email) {
   if (!client) throw new Error('Supabase is not configured yet.');
   const { error } = await client.auth.signInWithOtp({
     email, options: { emailRedirectTo: location.origin + location.pathname },
   });
-  if (error) throw error;
+  if (error) throw friendly(error);
 }
 export async function signOut() { if (client) await client.auth.signOut(); session = null; syncStatus = 'local'; emit(); }
 
