@@ -140,6 +140,12 @@ async function push() {
   emit();
 }
 
+export async function verifyCode(email, token) {
+  if (!client) throw new Error('Supabase is not configured yet.');
+  const { error } = await client.auth.verifyOtp({ email, token: String(token).replace(/\s+/g, ''), type: 'email' });
+  if (error) throw error;
+}
+
 export async function signIn(email) {
   if (!client) throw new Error('Supabase is not configured yet.');
   const { error } = await client.auth.signInWithOtp({
