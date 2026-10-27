@@ -194,7 +194,7 @@ export const ioSet5 = [
     t('5\n1 -3 71 68 17\n', '3'),
     t('2\n5 5\n', '0', 'Equal values have a gap of 0.'),
     t(`100000\n${Array.from({ length: 100000 }, (_, i) => ((i * 7919) % 100000) * 3).join(' ')}\n`, '3', 'Large input. Comparing every pair is too slow here; sort first.'),
-  ], ['Comparing every pair works for small lists but is slow for big ones.', 'Sort the numbers. The closest pair must be neighbours.', 'On the sorted list, loop `for i in range(1, n):` and keep the smallest `nums[i] - nums[i - 1]`.'],
+  ], ['Comparing every pair works for small lists but is slow for big ones.', 'Sort the numbers. The closest pair must be neighbors.', 'On the sorted list, loop `for i in range(1, n):` and keep the smallest `nums[i] - nums[i - 1]`.'],
   'n = int(input())\nnums = sorted(map(int, input().split()))\nprint(min(b - a for a, b in zip(nums, nums[1:])))\n'),
 
   P('io-gridsort', 'Sort rows, check columns', 55, 'Two ideas combined.', 'The first line is `n`. The next `n` lines are strings of the same length. Sort the letters inside each row alphabetically. Then print `YES` if every column reads in non-decreasing alphabetical order from top to bottom, otherwise `NO`.', [

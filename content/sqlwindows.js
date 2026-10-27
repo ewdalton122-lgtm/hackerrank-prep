@@ -1,5 +1,5 @@
 // Window-function drills. The SQL exam question is reported to go up to window functions,
-// so these are extra graded practice on ranking, neighbours, frames, buckets and running shares.
+// so these are extra graded practice on ranking, neighbors, frames, buckets and running shares.
 // Each runs on one of the small practice databases (see sqldata.js).
 const mk = (id, title, minutes, blurb, data, blocks, ex, quiz) => ({
   id, title, minutes, blurb, blocks,

@@ -60,7 +60,7 @@ const codingStrategy = {
     },
     {
       q: 'The input has n up to 100,000. Which approach is probably too slow?',
-      options: ['One pass through the list, adding to a total', 'A dictionary lookup for every item in the list', 'A loop inside a loop over the whole list', 'Sorting once, then one pass to compare neighbours'],
+      options: ['One pass through the list, adding to a total', 'A dictionary lookup for every item in the list', 'A loop inside a loop over the whole list', 'Sorting once, then one pass to compare neighbors'],
       answer: 2,
       explain: [
         'One pass is about n steps, which is fast.',

@@ -85,7 +85,7 @@ export const systems = [
       { t: 'p', text: 'Slow or bursty work (sending thousands of emails, large imports) goes into a **message queue**. The user gets an instant "accepted" and workers process the jobs in the background, retrying on failure. Queues absorb spikes and prevent lost requests. Most queues deliver a job **at least once**, so a worker may see the same job twice: design workers so repeating a job is harmless (idempotent), and move jobs that keep failing to a dead-letter queue. On Salesforce, long work runs as asynchronous Apex (future methods, Queueable, Batch and Scheduled jobs).' },
       { t: 'analogy', text: 'A queue is an inbox for batch jobs: accept now, process later, and keep anything that failed for a second look.' },
       { t: 'h', text: 'Multi-tenancy' },
-      { t: 'p', text: '**Multi-tenant** software serves many customers on shared infrastructure while keeping each customer\'s data isolated. Benefits: lower cost, easy upgrades for everyone. Challenges: **noisy neighbours** (one tenant hogging resources) and strict data isolation, which is why platforms impose **per-tenant limits**.' },
+      { t: 'p', text: '**Multi-tenant** software serves many customers on shared infrastructure while keeping each customer\'s data isolated. Benefits: lower cost, easy upgrades for everyone. Challenges: **noisy neighbors** (one tenant hogging resources) and strict data isolation, which is why platforms impose **per-tenant limits**.' },
       { t: 'analogy', text: 'One building, many tenants: shared plumbing, locked apartments, and a rule that nobody may run the water all day.' },
     ],
     quiz: [
