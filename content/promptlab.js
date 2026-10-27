@@ -169,6 +169,23 @@ export const promptDrills2 = [
       'Say "One time per line, same order, nothing else".',
     ],
   }),
+  d('pe-brief', 'Drill 19: summarize a ticket in fixed fields', 50, 'A summary the grader can check: fixed fields and fixed words.', [
+    { t: 'p', text: 'Free-form summaries cannot be graded by exact match, so summarization questions are usually written with a **fixed shape**: named fields, and a short list of allowed words for each one. Your job is to give the model the allowed words and the rule for choosing between them.' },
+    { t: 'code', text: 'TOPIC: billing | login | shipping\nPRIORITY: HIGH | MEDIUM | LOW' },
+    { t: 'tip', text: 'Write the rule for each choice. "HIGH if the message says today, urgent or immediately. MEDIUM if it says soon or this week. Otherwise LOW."' },
+  ], {
+    task: 'Summarize each support message as two lines. Line 1: `TOPIC: ` then billing, login or shipping. Line 2: `PRIORITY: ` then HIGH if the message says today, urgent or immediately; MEDIUM if it says soon or this week; otherwise LOW.',
+    cases: [
+      { input: 'I was charged twice for my order and need this fixed today', expected: 'TOPIC: billing\nPRIORITY: HIGH' },
+      { input: 'I cannot log in to my account, please help this week', expected: 'TOPIC: login\nPRIORITY: MEDIUM' },
+      { input: 'My package has not arrived yet, no rush', expected: 'TOPIC: shipping\nPRIORITY: LOW' },
+    ],
+    hints: [
+      'Give the exact two-line shape: `TOPIC: <word>` then `PRIORITY: <word>`.',
+      'List the only allowed words for each field, and the rule for choosing the priority.',
+      'Say "Output only these two lines, with nothing before or after".',
+    ],
+  }),
 ];
 
 // ---------------------------------------------------------------- diagnose the failure

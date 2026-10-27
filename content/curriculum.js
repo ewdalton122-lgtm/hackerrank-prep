@@ -89,7 +89,7 @@ export const STAGES = [
       const by = Object.fromEntries([...prompts, ...promptMore, ...promptDrills2, ...promptDiagnose].map((i) => [i.id, i]));
       const order = [...prompts.slice(0, -1).map((i) => i.id), ...promptMore.map((i) => i.id),
         'pe-dx-extra', 'pe-dx-format', 'pe-sort', 'pe-mask', 'pe-status', 'pe-dx-edge', 'pe-tags', 'pe-sum',
-        'pe-dx-examples', 'pe-dx-inject', 'pe-inject', 'pe-initials', 'pe-dedupe', 'pe-time', 'pe-dx-plan'];
+        'pe-dx-examples', 'pe-dx-inject', 'pe-inject', 'pe-initials', 'pe-dedupe', 'pe-time', 'pe-brief', 'pe-dx-plan'];
       return [...order.map((id) => by[id]), ...prompts.filter((i) => i.optional)];
     })(),
   },

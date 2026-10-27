@@ -21,7 +21,7 @@ export const orient = [
       { t: 'p', text: 'Output is compared character by character. An extra space, an extra blank line, `9.0` instead of `9`, or a leftover debug `print` can turn a correct answer into a fail.' },
       { t: 'h', text: 'Return vs print' },
       { t: 'p', text: 'Most coding questions give you a function to complete. The platform calls your function and reads what it **returns**. Anything you `print` goes to a separate debug panel and is not graded.' },
-      { t: 'warn', text: 'Switching the language dropdown on a question resets your code. Pick one language (Python) and stay with it.' },
+      { t: 'warn', text: 'Switching the language dropdown on a question resets your code. Pick one language and stay with it. Candidates recommend Python for coding and MySQL for SQL.' },
     ],
     quiz: [
       {
@@ -101,6 +101,14 @@ export const orient = [
         '**The small questions decide the margin.** Four multiple-choice questions and the written reply are 20 points, which is the difference between 59% and 71%.',
         '**Format errors cost whole sections.** An extra word in a prompt reply or a missing edge case in code can zero out 50 points, so exactness is the skill to practise.',
         '**Engineers need almost everything.** At 119 points, the 70% bar means two big sections plus every small point at the very least, so all three big sections is the realistic goal.',
+      ] },
+      { t: 'h', text: 'What each section reportedly covers' },
+      { t: 'list', items: [
+        '**SQL:** one problem, up to window functions. Practise joins, grouping, ranking and running totals.',
+        '**Coding:** one problem. Reports range from the easiest level (loops, if statements, simple logic) to array navigation, string handling, sorting and greedy choices. Binary search is not named anywhere as required.',
+        '**Prompt engineering:** one problem. Reported topics are extraction and summarization, completeness validation and structured output. The output is checked automatically, so the format has to be exactly as specified.',
+        '**Multiple choice:** four questions of general software-as-a-service knowledge, such as multi-tenancy, uptime and async jobs.',
+        '**Written reply:** one difficult customer situation, worth only a few points.',
       ] },
       { t: 'warn', text: 'Still unconfirmed: whether wrong multiple-choice answers lose points, whether you can pause the timer, and whether you can move back to earlier questions. Ask your recruiter, and assume the clock never stops.' },
     ],
@@ -214,7 +222,7 @@ export const orient = [
     minutes: 20,
     blurb: 'Timed assessments are often proctored. Build the habits now.',
     blocks: [
-      { t: 'p', text: 'Many online assessments run in a proctored mode: webcam on, full-screen, one monitor, and no copy-paste. Confirm the exact rules in your own invitation email, and practice under similar conditions so exam day feels familiar.' },
+      { t: 'p', text: 'Reports about whether this exam is proctored conflict, so assume it is. HackerRank\'s proctor mode watches the webcam and the screen for unauthorized objects, and some tests have an opt-out version. Read your invitation email for the exact rules, ask your recruiter which version you are getting, and practice under strict conditions so exam day feels familiar.' },
       { t: 'list', items: [
         'Do timed practice in a quiet room, full-screen, with no notes and no AI assistant open.',
         'Type every line yourself, including common patterns. Pasting is usually disabled in the real test.',
