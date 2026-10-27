@@ -31,6 +31,7 @@ export function update(fn, { silent = false } = {}) {
   state.updatedAt = Date.now();
   persist();
   schedulePush();
+  if (typeof document !== 'undefined') document.dispatchEvent(new Event('zta:progress'));
   if (!silent) emit();
 }
 

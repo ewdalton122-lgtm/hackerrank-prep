@@ -7,7 +7,7 @@ import { compareSql, diagnoseText, explainSqlError } from './diagnose.js';
 import { SECTIONS } from './readiness.js';
 import { DATASETS } from '../../content/sqldata.js';
 import { MOCKS } from '../../content/mocks.js';
-import { itemsFor, ROLES } from '../../content/curriculum.js';
+import { itemsFor, ROLES, findItem } from '../../content/curriculum.js';
 
 const RUN_KEY = 'zta.mockrun';
 const LAST_KEY = 'zta.mocklast';
@@ -409,7 +409,7 @@ function renderResult(host, res, role) {
     </div>
     <div class="card"><h2>By skill area</h2><div class="secs">${Object.entries(res.sectionPct).map(([k, v]) => `<div class="sec"><div class="sec-head"><b>${esc(secName[k] || k)}</b><span>${Math.round(v)}%</span></div><div class="bar"><i style="width:${Math.round(v)}%"></i></div><p class="small muted">${res.sectionN[k]} question${res.sectionN[k] > 1 ? 's' : ''}</p></div>`).join('')}</div>
       ${weakest && weakest[1] < 100 ? `<p style="margin-top:12px"><b>Weakest area:</b> ${esc(secName[weakest[0]] || weakest[0])}.</p>` : ''}</div>
-    ${refs.length ? `<div class="card"><h2>Study these next</h2><p class="muted">Each lesson below covers a question you missed or only partly got.</p><ul class="items">${refs.map((id) => title(id) ? `<li><a class="item" href="#/item/${id}"><span class="t">${esc(title(id))}<small>Lesson</small></span><span class="m">Open</span></a></li>` : '').join('')}</ul></div>` : '<div class="card"><h2>Nothing to review</h2><p>You got every question right.</p></div>'}
+    ${refs.length ? `<div class="card"><h2>Study these next</h2><p class="muted">Each lesson below covers a question you missed or only partly got.</p><ul class="items">${refs.map((id) => title(id) ? `<li><a class="item" href="#/item/${id}"><span class="t">${esc(title(id))}<small>Lesson in this site</small></span><span class="m">Open</span></a>${(findItem(id)?.links || []).slice(0, 2).map((l) => `<div class="small extl">Also: <a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a></div>`).join('')}</li>` : '').join('')}</ul></div>` : '<div class="card"><h2>Nothing to review</h2><p>You got every question right.</p></div>'}
     <div class="card"><h2>Review every question</h2>${qs.map((q, i) => reviewQ(q, i, res)).join('')}</div>
     <div class="row"><a class="btn primary" href="#/mocks">Back to mock exams</a><a class="btn" href="#/readiness">See readiness</a></div>`;
 }

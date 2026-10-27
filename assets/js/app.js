@@ -6,6 +6,7 @@ import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } fro
 import { esc, inline, fmtMin, toast, renderBlocks, feedback } from './ui.js';
 import { mountQuiz, mountPython, mountSql, mountPrompt, mountWritten } from './components.js';
 import { mountMockPage, mountMockList, stopMock, mockStats, verdict } from './mock.js';
+import { heroHtml, paintHeroes, initMomentum } from './momentum.js';
 
 const app = document.getElementById('app');
 const NAV = [
@@ -36,8 +37,9 @@ function shell(inner, active) {
           <div style="opacity:.7">${syncText}</div>
         </div>
       </aside>
-      <main class="main" id="main">${inner}</main>
+      <main class="main" id="main">${s.profile && active && active !== '#/today' && !location.hash.startsWith('#/mock/') ? heroHtml(s, 'slim') : ''}${inner}</main>
     </div>`;
+  paintHeroes();
   return document.getElementById('main');
 }
 
@@ -134,15 +136,11 @@ function viewToday() {
   const bars = lastSevenDays(s);
   const maxBar = Math.max(30, ...bars.map((b) => b.min));
   const main = shell(`
-    <div class="pagehead">
-      <h1>${greet}</h1>
-      <p>${ROLES[s.profile.role].name} track. Exam on ${fmtDate(s.profile.examDate)}.</p>
-    </div>
+    ${heroHtml(s, 'full', { eyebrow: `${greet} \u00b7 ${ROLES[s.profile.role].name} track \u00b7 exam ${fmtDate(s.profile.examDate)}` })}
     <div class="grid cols-3" style="margin-bottom:18px">
       <div class="stat"><div class="n">${plan.daysLeft}</div><div class="l">days to your exam</div></div>
       <div class="stat"><div class="n">${plan.perDay}<span style="font-size:1rem"> min</span></div><div class="l">target per study day</div></div>
       <div class="stat"><div class="n">${plan.studiedToday}<span style="font-size:1rem"> min</span></div><div class="l">studied today</div></div>
-      <div class="stat"><div class="n">${plan.streak}</div><div class="l">study-day streak</div></div>
       <a class="stat" href="#/readiness" style="display:block;text-decoration:none"><div class="n">${ready.enoughData ? pct(ready.overall) : '...'}</div><div class="l">readiness${ready.enoughData && ready.focus ? `. Focus: ${esc(ready.focus.name)}` : ' (builds as you practise)'}</div></a>
     </div>
     ${journeyMap(s)}
@@ -456,6 +454,7 @@ setInterval(() => {
   update((s) => { const k = ymd(); s.log[k] = (s.log[k] || 0) + 10; }, { silent: true });
 }, 10000);
 
+initMomentum();
 window.addEventListener('hashchange', render);
 render();
 initRemote().then(() => {

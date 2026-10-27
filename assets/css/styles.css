@@ -278,3 +278,76 @@ details.rq summary{cursor:pointer;display:flex;gap:10px;align-items:center;justi
 .jstep.done .jbar i{background:var(--ok)}
 .jstep.now{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-bg)}
 .jstep.now .jn{background:var(--brand);color:#fff}
+
+/* ---------- Progress hero, XP, celebrations ---------- */
+.hero { color: #fff; border-radius: 20px; padding: 26px clamp(18px, 3vw, 32px) 22px; margin-bottom: 20px; position: relative; overflow: hidden;
+  background: radial-gradient(1200px 400px at 90% -20%, rgba(63, 214, 193, .28), transparent 60%), radial-gradient(900px 400px at -10% 120%, rgba(27, 150, 255, .35), transparent 60%), linear-gradient(135deg, #10284d 0%, #0a4f96 100%);
+  box-shadow: 0 10px 30px rgba(10, 79, 150, .28); }
+.hero-top { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+.hero-copy { min-width: 0; }
+.eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #b9d6f7; font-weight: 600; }
+.hero-h { color: #fff; font-size: clamp(1.4rem, 3.2vw, 2rem); margin: 6px 0 8px; letter-spacing: -.01em; }
+.hero-sub { color: #dbe9fb; max-width: 60ch; margin: 0 0 16px; }
+.hero-pct { display: flex; align-items: baseline; line-height: 1; flex: none; }
+.hero-pct b { font-size: clamp(3rem, 8vw, 4.8rem); font-weight: 800; letter-spacing: -.03em; background: linear-gradient(180deg, #fff, #9bd7ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-pct span { font-size: 1.6rem; font-weight: 700; color: #9bd7ff; margin-left: 2px; }
+
+.hbar { --p: 0; position: relative; height: 16px; border-radius: 999px; background: rgba(255, 255, 255, .16); margin: 8px 2px 26px; }
+.hbar .fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 1%); border-radius: 999px; overflow: hidden; background: linear-gradient(90deg, #1b96ff, #3fd6c1); transition: width 1.4s cubic-bezier(.2, .8, .2, 1); box-shadow: 0 0 18px rgba(63, 214, 193, .55); }
+.hbar .fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .55) 50%, transparent 70%); transform: translateX(-100%); animation: shine 3.2s ease-in-out infinite 1.5s; }
+.hbar .you { position: absolute; top: 50%; left: calc(var(--p) * 1%); width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: #fff; border: 5px solid #1b96ff; box-shadow: 0 2px 10px rgba(0, 0, 0, .3); transition: left 1.4s cubic-bezier(.2, .8, .2, 1); }
+.hbar .tick { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: rgba(255, 255, 255, .35); }
+.hbar .tick em { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .72rem; color: #b9d6f7; }
+.hbar .tick.hit { background: rgba(255, 255, 255, .8); }
+.hbar .tick.hit em { color: #fff; font-weight: 700; }
+.hbar-legend { display: flex; justify-content: space-between; font-size: .72rem; color: #9fc4ee; margin: -14px 2px 16px; }
+@keyframes shine { 0% { transform: translateX(-100%); } 45%, 100% { transform: translateX(100%); } }
+
+.hero-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.hc { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .16); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.hc.ringc { flex-direction: row; align-items: center; gap: 12px; }
+.hc-t { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 6px; }
+.hc-s { font-size: .8rem; color: #c3dcf6; }
+.hc.flame svg, .hs-chip.flame svg { color: #8aa3c2; }
+.hc.flame.on svg, .hs-chip.flame.on svg { color: #ffb75d; filter: drop-shadow(0 0 6px rgba(255, 183, 93, .8)); animation: flicker 1.8s ease-in-out infinite; }
+.xpbar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .18); margin: 6px 0 4px; overflow: hidden; }
+.xpbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb75d, #ffd98a); border-radius: 99px; transition: width 1s ease; }
+.ring .rb { fill: none; stroke: rgba(255, 255, 255, .2); stroke-width: 5; }
+.ring .rf { fill: none; stroke: #3fd6c1; stroke-width: 5; stroke-linecap: round; transition: stroke-dasharray 1s ease; }
+.ring.full .rf { stroke: #ffd98a; }
+@keyframes flicker { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12) rotate(-4deg); } }
+
+.hero-next { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: rgba(255, 255, 255, .95); color: var(--ink); }
+.hero-next .hc-s { color: var(--muted); }
+.hn-t { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+.btn.go { background: var(--brand); border-color: var(--brand); color: #fff; white-space: nowrap; box-shadow: 0 4px 14px rgba(11, 107, 203, .4); }
+.btn.go:hover { background: var(--brand-d); transform: translateY(-1px); }
+
+.hslim { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; margin: -12px -8px 18px; padding: 10px 14px; border-radius: 14px; background: linear-gradient(135deg, #10284d, #0a4f96); color: #fff; box-shadow: 0 6px 18px rgba(10, 79, 150, .25); }
+.hslim .hbar { flex: 1; height: 10px; margin: 0; min-width: 60px; }
+.hslim .hbar .tick, .hslim .hbar .tick em { display: none; }
+.hslim .hbar .you { width: 18px; height: 18px; margin: -9px 0 0 -9px; border-width: 4px; }
+.hs-pct { color: #fff; font-weight: 800; text-decoration: none; min-width: 3ch; }
+.hs-chip { font-size: .8rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: rgba(255, 255, 255, .14); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.hs-chip svg { width: 14px; height: 14px; }
+.hslim .ring .rb { stroke-width: 4; } .hslim .ring .rf { stroke-width: 4; }
+
+.fx-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 1000; }
+.xp-pop { position: fixed; right: 24px; z-index: 1001; padding: 9px 16px; border-radius: 99px; background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 8px 26px rgba(22, 50, 92, .25); border: 1px solid var(--line); animation: pop 2.6s ease forwards; pointer-events: none; }
+.xp-pop.big { background: linear-gradient(135deg, #0b6bcb, #1b96ff); color: #fff; border-color: transparent; }
+.xp-pop.level { background: linear-gradient(135deg, #ffb75d, #ffd98a); color: #5a3a00; border-color: transparent; }
+@keyframes pop { 0% { opacity: 0; transform: translateY(14px) scale(.9); } 12% { opacity: 1; transform: translateY(0) scale(1.06); } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
+.fx-modal { position: fixed; inset: 0; z-index: 999; background: rgba(10, 25, 50, .6); display: grid; place-items: center; padding: 18px; animation: fade .25s ease; }
+.fx-card { background: #fff; border-radius: 22px; padding: 32px clamp(20px, 4vw, 40px); max-width: 480px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); animation: rise .4s cubic-bezier(.2, .9, .3, 1.2); }
+.fx-card h2 { font-size: 1.7rem; margin-bottom: .4em; }
+.fx-kicker { text-transform: uppercase; letter-spacing: .09em; font-size: .75rem; font-weight: 700; color: var(--brand); margin-bottom: 8px; }
+.fx-note { background: var(--brand-bg); color: var(--ink); border-radius: 12px; padding: 12px 14px; font-weight: 500; }
+@keyframes fade { from { opacity: 0; } } @keyframes rise { from { opacity: 0; transform: translateY(24px) scale(.94); } }
+@media (max-width: 640px) { .hero-top { flex-direction: column-reverse; } .hero-next { flex-direction: column; align-items: stretch; text-align: left; } .hslim .hs-chip:not(.flame) { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hbar .fill, .hbar .you, .xpbar i { transition: none; } .hbar .fill::after, .hc.flame.on svg, .hs-chip.flame.on svg, .xp-pop, .fx-card, .fx-modal { animation: none; } .xp-pop { opacity: 1; } }
+li .extl{margin:-2px 0 8px 52px}
+.hbar .tick em{white-space:nowrap}
+
+.hbar .tick.end em{left:auto;right:-2px;transform:none}
+.hero-chips{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.hbar{margin-bottom:30px}
