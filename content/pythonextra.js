@@ -11,7 +11,7 @@ const P = (id, title, minutes, blurb, prompt, tests, hints, solution, blocks = [
   exercise: { kind: 'python', io: true, prompt, starter: START, tests, hints, solution },
 });
 
-export const jackArrays = [
+export const extraArrays = [
   P('io-target', 'Find the position', 30, 'Array indexing: where is the first match? (Recommended practice: Target Index)',
     'The first line holds a list of integers (it may be empty). The second line is a target integer. Print the **position** (counting from 0) of the first occurrence of the target, or `-1` if it is not in the list.', [
       t('4 8 15 16\n15\n', '2'),
@@ -62,7 +62,7 @@ export const jackArrays = [
     ]),
 ];
 
-export const jackStrings = [
+export const extraStrings = [
   P('io-anagram', 'Anagram check', 30, 'Compare letters. (Recommended practice: isAnagram)',
     'Two lines each hold a word. Two words are anagrams when they use exactly the same letters the same number of times, ignoring upper and lower case. Print `YES` if they are anagrams, otherwise `NO`. Each word can have 100000 letters.', [
       t('listen\nsilent\n', 'YES'),

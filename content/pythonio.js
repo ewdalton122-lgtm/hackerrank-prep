@@ -1,5 +1,5 @@
 import { ioSet6 } from './pythonhard.js';
-import { jackArrays, jackStrings } from './pythonjack.js';
+import { extraArrays, extraStrings } from './pythonextra.js';
 // Exam-style Python problems: the program reads from input() and prints the answer.
 // Every problem is written from scratch. Visible tests teach; hidden tests check the edge cases.
 // t(input, output, edge?) -> a test; passing an edge message makes it a hidden test.
@@ -215,8 +215,8 @@ export const ioSet5 = [
 
 export const ioSets = [
   { id: 'io-set-1', title: 'Coding set 1: first programs', items: ioSet1 },
-  { id: 'io-set-2', title: 'Coding set 2: arrays and printed output', items: [...ioSet2, ...jackArrays] },
-  { id: 'io-set-3', title: 'Coding set 3: strings', items: [...ioSet3, ...jackStrings] },
+  { id: 'io-set-2', title: 'Coding set 2: arrays and printed output', items: [...ioSet2, ...extraArrays] },
+  { id: 'io-set-3', title: 'Coding set 3: strings', items: [...ioSet3, ...extraStrings] },
   { id: 'io-set-4', title: 'Coding set 4: dictionaries and sets', items: ioSet4 },
   { id: 'io-set-5', title: 'Coding set 5: sorting and greedy choices', items: ioSet5 },
   { id: 'io-set-6', title: 'Coding set 6: exam-level and stretch problems', items: ioSet6 },
