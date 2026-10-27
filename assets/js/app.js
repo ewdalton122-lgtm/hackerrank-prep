@@ -1,3 +1,4 @@
+import { computeReadiness, pct } from './readiness.js';
 import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
 import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/curriculum.js';
 import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } from './planner.js';
@@ -8,6 +9,7 @@ const app = document.getElementById('app');
 const NAV = [
   ['#/today', 'Today', 'M4 12l8-8 8 8M6 10v9h12v-9'],
   ['#/roadmap', 'Roadmap', 'M4 6h16M4 12h16M4 18h10'],
+  ['#/readiness', 'Readiness', 'M4 20V10M10 20V4M16 20v-7M22 20H2'],
   ['#/internal', 'Internal', 'M6 10V8a6 6 0 1112 0v2M5 10h14v10H5z'],
   ['#/settings', 'Settings', 'M12 8a4 4 0 100 8 4 4 0 000-8z'],
 ];
@@ -124,6 +126,7 @@ function viewToday() {
   const weak = Object.entries(s.progress)
     .map(([id, p]) => ({ id, n: Object.values(p.missed || {}).reduce((a, b) => a + b, 0) }))
     .filter((x) => x.n > 0 && findItem(x.id)).sort((a, b) => b.n - a.n).slice(0, 3);
+  const ready = computeReadiness(s);
   const bars = lastSevenDays(s);
   const maxBar = Math.max(30, ...bars.map((b) => b.min));
   const main = shell(`
@@ -136,6 +139,7 @@ function viewToday() {
       <div class="stat"><div class="n">${plan.perDay}<span style="font-size:1rem"> min</span></div><div class="l">target per study day</div></div>
       <div class="stat"><div class="n">${plan.studiedToday}<span style="font-size:1rem"> min</span></div><div class="l">studied today</div></div>
       <div class="stat"><div class="n">${plan.streak}</div><div class="l">study-day streak</div></div>
+      <a class="stat" href="#/readiness" style="display:block;text-decoration:none"><div class="n">${ready.enoughData ? pct(ready.overall) : '...'}</div><div class="l">readiness${ready.enoughData && ready.focus ? `. Focus: ${esc(ready.focus.name)}` : ' (builds as you practise)'}</div></a>
     </div>
     <div class="card">
       <div class="stagehead"><h2>${statusMsg[0] === 'On track' ? 'Your plan' : 'Your plan'}</h2>${pill(statusMsg[0], statusMsg[1])}</div>
@@ -250,6 +254,45 @@ function viewItem(id) {
   return main;
 }
 
+// ------------------------------------------------------------------ readiness
+function viewReadiness() {
+  const s = getState();
+  const r = computeReadiness(s);
+  const role = ROLES[r.role];
+  const status = !r.enoughData ? 'early' : r.overall >= 0.8 ? 'strong' : r.overall >= role.bar / 100 ? 'close' : 'building';
+  const msg = {
+    early: ['Not enough data yet', 'gray', 'Finish about 8 items and this page will start to mean something. Until then, just follow the Today page.'],
+    building: ['Still building', 'warn', `Your pass mark is ${role.bar}%. Practice scores run lower than you expect under time pressure, so aim for 75% or more here before you book the assessment.`],
+    close: ['Getting close', 'ok', `You are above the ${role.bar}% pass mark on this estimate, but not with a safe margin. Aim for 75% or more, and fix the weak spots below first.`],
+    strong: ['Looking strong', 'ok', 'Keep up the practice, and take the timed mock tests in Stage 7 to confirm it under exam conditions.'],
+  }[status];
+  const f = r.focus;
+  const main = shell(`
+    <div class="pagehead"><h1>Readiness</h1><p>An honest estimate from your own practice: how much you have finished, and how often you got it right first time. It is not a prediction of your exam score.</p></div>
+    <div class="card">
+      <div class="stagehead"><h2>Overall: ${r.enoughData ? pct(r.overall) : 'warming up'}</h2>${pill(msg[0], msg[1])}</div>
+      <div class="meter"><i style="width:${Math.round(r.overall * 100)}%"></i><b style="left:${role.bar}%" title="Pass mark ${role.bar}%"></b></div>
+      <p class="small muted" style="margin-top:8px">The marker is the ${role.bar}% pass mark for ${esc(role.name)}.</p>
+      <p>${msg[2]}</p>
+    </div>
+    ${f && r.enoughData ? `<div class="card"><h2>Best use of your next session</h2>
+      <p><b>${esc(f.name)}</b> has the most room to grow (${pct(f.readiness)} ready). ${esc(f.tip)}</p>
+      ${f.nextItem ? `<a class="btn primary" href="#/item/${f.nextItem.id}">Next in ${esc(f.name)}: ${esc(f.nextItem.title)}</a>` : '<p class="muted">Everything in this area is done. Redo the review list below.</p>'}</div>` : ''}
+    <div class="card"><h2>By skill area</h2>
+      <div class="secs">${r.sections.map((x) => `<div class="sec">
+        <div class="sec-head"><b>${esc(x.name)}</b><span>${pct(x.readiness)}</span></div>
+        <div class="bar"><i style="width:${Math.round(x.readiness * 100)}%"></i></div>
+        <p class="small muted">${x.doneItems} of ${x.items} items done &middot; ${x.firstTry === null ? 'no practice yet' : `${pct(x.firstTry)} right first time`} &middot; ${x.misses} wrong attempt${x.misses === 1 ? '' : 's'}</p>
+      </div>`).join('')}</div>
+      <p class="small muted" style="margin-top:12px">Skill areas are weighted roughly by how much of the assessment they are likely to cover. Prompt engineering, SQL and coding count most. Once you know the real weighting from the hiring manager, tell me and I will update it.</p>
+    </div>
+    <div class="card"><h2>Redo these</h2>
+      ${r.review.length ? `<ul class="items">${r.review.map((x) => `<li><a class="item" href="#/item/${x.item.id}"><span class="t">${esc(x.item.title)}<small>${esc(x.section)} &middot; ${x.n} wrong attempts &middot; ${x.done ? 'finished, but shaky' : 'not finished'}</small></span><span class="m">Retry</span></a></li>`).join('')}</ul>
+      <p class="small muted" style="margin-top:8px">Redo each one from scratch tomorrow without looking at the solution. If you can, the topic is learned.</p>` : '<p class="muted">Nothing needs a redo yet. Items you get wrong twice or more will show up here.</p>'}
+    </div>`, '#/readiness');
+  return main;
+}
+
 // ------------------------------------------------------------------ internal (gated)
 async function viewInternal() {
   const user = getUser();
@@ -337,6 +380,7 @@ async function render() {
   if (a === 'today' || route === '/') return viewToday();
   if (a === 'roadmap') return viewRoadmap();
   if (a === 'item') return viewItem(b);
+  if (a === 'readiness') return viewReadiness();
   if (a === 'internal') return viewInternal();
   if (a === 'settings') return viewSettings();
   location.hash = '#/today';
