@@ -155,7 +155,7 @@ export const practice = [
       { expr: 'binary_search([1, 3, 5, 7, 9], 4)', expected: '-1' },
       { expr: 'binary_search([5], 5)', expected: '0' },
       { expr: 'binary_search([], 5)', expected: '-1', hidden: true, edge: 'An empty list never contains the target.' },
-      { expr: 'binary_search(list(range(0, 2000000, 2)), 1999998)', expected: '999999', hidden: true, edge: 'This one is big. Going item by item may time out, so halve the search area.' },
+      { expr: 'binary_search(list(range(0, 2000000, 2)), 1999998)', expected: '999999', hidden: true, edge: 'A big list with the target at the very end. Check that your loop moves `low` or `high` every time, so it finishes.' },
     ],
     hints: ['If `nums[mid] == target`, return `mid`.', 'If `nums[mid] < target`, the target is to the right: `low = mid + 1`. Otherwise `high = mid - 1`.', 'If you get stuck in an endless loop, check that `low` or `high` really changes every time round.'],
     solution: 'def binary_search(nums, target):\n    low, high = 0, len(nums) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1\n',
@@ -164,7 +164,7 @@ export const practice = [
   p('pr-peak', 'Find the peak', 60, 'Binary search with a twist: compare neighbours.', [
     { t: 'p', text: 'A **bitonic** list goes strictly up, then strictly down, like `[1, 3, 8, 12, 4, 2]`. The peak is the biggest value. You do not need a target: compare the middle with the item to its right.' },
     { t: 'list', items: ['If `nums[mid] < nums[mid + 1]` you are still on the way up, so the peak is to the right.', 'Otherwise you are at the peak or past it, so the peak is at `mid` or to the left.'] },
-    { t: 'tip', text: 'A simple loop with `max` passes small tests. The halving version is for the big hidden tests.' },
+    { t: 'tip', text: 'A simple loop with `max` also gets the right answer, and one pass is fast enough for these tests. Practise the halving version anyway: it is what this classic exam question is testing, and it is the follow-up interviewers ask for.' },
   ], {
     prompt: 'Write `peak_index(nums)` for a list that strictly increases and then strictly decreases (either part may be empty). Return the **index** of the largest value.',
     fn: 'peak_index',
@@ -174,7 +174,7 @@ export const practice = [
       { expr: 'peak_index([1, 2, 3])', expected: '2' },
       { expr: 'peak_index([9, 4, 1])', expected: '0' },
       { expr: 'peak_index([7])', expected: '0', hidden: true, edge: 'A single item is the peak.' },
-      { expr: 'peak_index(list(range(0, 500000)) + list(range(499999, 0, -1)))', expected: '499999', hidden: true, edge: 'A very long list. Halve the search area instead of checking every item.' },
+      { expr: 'peak_index(list(range(0, 500000)) + list(range(499998, -1, -1)))', expected: '499999', hidden: true, edge: 'A very long list that rises to 499999 and then falls.' },
     ],
     hints: ['If `nums[mid] < nums[mid + 1]`, the peak is to the right: `low = mid + 1`.', 'Otherwise the peak is at `mid` or to its left: `high = mid`.', 'Keep `while low < high`. When they meet, `low` is the peak index.'],
     solution: 'def peak_index(nums):\n    low, high = 0, len(nums) - 1\n    while low < high:\n        mid = (low + high) // 2\n        if nums[mid] < nums[mid + 1]:\n            low = mid + 1\n        else:\n            high = mid\n    return low\n',

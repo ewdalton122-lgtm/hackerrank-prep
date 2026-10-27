@@ -70,9 +70,9 @@ export const interview = [
       q: 'You are asked to present an Agentforce project to a Deployment Strategist panel. Which opening is strongest?',
       options: [
         'A tour of the agent\'s topics, actions and prompts, in build order',
-        'The business problem, who was affected, and what it was costing them',
-        'The list of every feature you shipped',
-        'The technical architecture diagram',
+        'The business problem, who it affected, and what it cost them',
+        'A list of every feature you shipped, with release dates',
+        'The architecture diagram, so the panel sees how it all fits',
       ],
       answer: 1,
       explain: [
@@ -129,29 +129,29 @@ export const interview = [
   ], null, [
     {
       q: 'A customer says: "We need an AI agent for service." Which is the best first question?',
-      options: ['Which AI model do you want to use?', 'Walk me through what happens today when a customer contacts you, and where it breaks down.', 'What is your budget?', 'Can we start next week?'],
+      options: ['Which AI model and which channels would you like the agent to use?', 'Walk me through a customer contact today. Where does it break?', 'What budget and timeline do you have for this project?', 'Would you like the agent to start with chat or with email?'],
       answer: 1,
       explain: [
         'This jumps to a technical choice before anyone understands the problem.',
         'Correct. It is open, asks for specifics, and finds the real problem.',
-        'Budget matters, but not before you know what the problem is worth.',
-        'Moving fast before discovery risks building the wrong thing.',
+        'Budget and timing matter, but not before you know what the problem is worth.',
+        'It is a closed question that jumps to a solution before you understand the problem.',
       ],
     },
     {
       q: 'Which question best uncovers the business impact of a problem?',
-      options: ['Is it a big problem?', 'How many cases does it affect each week, and what does each one cost you?', 'Who caused it?', 'Have you tried turning it off and on again?'],
+      options: ['Would you say this is a big problem for your team?', 'How many cases does it affect each week, and what does each cost?', 'Who on your team caused the problem in the first place?', 'How bad does the problem feel to your team, on a scale of 1 to 10?'],
       answer: 1,
       explain: [
         'It is closed, and "big" is subjective.',
         'Correct. It asks for numbers you can put in a business case.',
         'Blame closes people down and teaches you nothing about impact.',
-        'It is a joke, not discovery.',
+        'A feeling score is a number, but it is not a cost you can put in a business case.',
       ],
     },
     {
       q: 'How will you know the discovery meeting went well?',
-      options: ['You talked for most of the hour', 'You have a clear problem statement, an impact estimate and a named owner', 'Everyone agreed with you', 'You showed all your slides'],
+      options: ['You explained the solution clearly for most of the hour', 'You have a clear problem, an impact estimate and a named owner', 'Everyone in the room agreed with your proposed solution', 'You got through every slide in your prepared deck'],
       answer: 1,
       explain: [
         'In good discovery, the customer should talk most of the time.',
@@ -175,13 +175,13 @@ export const interview = [
   ], null, [
     {
       q: 'Which is the strongest question to ask at the end of an interview?',
-      options: ['How many vacation days do I get?', 'What would success look like in my first 90 days?', 'What does your company do?', 'Do you have any questions for me?'],
+      options: ['What is the vacation and remote work policy here?', 'What would success look like in my first 90 days?', 'Can you tell me more about what your company does?', 'How soon could I be promoted to a more senior role?'],
       answer: 1,
       explain: [
         'Fine later in the process, but it makes a poor closing question in a first conversation.',
         'Correct. It shows you are already planning to deliver.',
         'It shows you did no research.',
-        'Turning the question back on them is awkward and unprepared.',
+        'It suggests you are focused on the next job before you have started this one.',
       ],
     },
   ]),

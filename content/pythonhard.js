@@ -1,4 +1,4 @@
-// Exam-level Python problems (Coding set 6). Same format as pythonio.js. The first four are required; the rest are optional stretch practice, harder than Jack's recommended list.
+// Exam-level Python problems (Coding set 6). Same format as pythonio.js. The first four are required; the rest are optional stretch practice, harder than the recommended practice list.
 // These match the reported exam topics: array navigation, string handling, sorting and greedy choices.
 // They have large hidden inputs, so a slow approach will time out the way it would on HackerRank.
 // Every problem is written from scratch. Visible tests teach; hidden tests check edge cases and speed.
@@ -73,7 +73,7 @@ export const ioSet6 = [
     ], true),
 
   P('io-freqsort', 'Sort letters by popularity', 40, 'Count with a dictionary, then sort with two rules.',
-    'Read one line of text. Ignore spaces. Count how often each letter appears. Print the letters from most frequent to least, each followed by its count, separated by spaces (for example `a3 n2 b1`). Letters with the same count are listed alphabetically.', [
+    'Read one line of text. Count how often each character appears, skipping spaces. Print the letters from most frequent to least, each followed by its count, separated by spaces (for example `a3 n2 b1`). Letters with the same count are listed alphabetically.', [
       t('banana\n', 'a3 n2 b1'),
       t('abc\n', 'a1 b1 c1'),
       t('zzzaab\n', 'z3 a2 b1'),
@@ -163,6 +163,6 @@ export const ioSet6 = [
     ]),
 ];
 
-// Required problems first, then the optional stretch problems (harder than the problems on Jack's list).
+// Required problems first, then the optional stretch problems (harder than the recommended practice list).
 ioSet6.sort((a, b) => (a.optional ? 1 : 0) - (b.optional ? 1 : 0));
 ioSet6.forEach((i) => { if (i.optional) i.blurb = `Stretch: ${i.blurb}`; });

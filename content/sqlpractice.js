@@ -12,15 +12,21 @@ export const sqlDrills = [
     hints: ['The join is started for you. Add `WHERE d.stage = \'Closed Won\'` after it.', 'Add `SUM(d.amount) AS total` to the SELECT and `GROUP BY a.region`.', 'Finish with `ORDER BY total DESC`.'],
   }),
 
-  q('sqp-nodeals', 'Accounts with no deals', 40, 'LEFT JOIN and IS NULL: find what is missing.', [
-    { t: 'p', text: 'A plain `JOIN` keeps only matches. To find things with **no** match, use `LEFT JOIN` and keep the rows where the right side is `NULL`.' },
-    { t: 'code', text: 'SELECT a.name\nFROM accounts a\nLEFT JOIN deals d ON d.account_id = a.id\nWHERE d.id IS NULL;' },
-    { t: 'warn', text: 'Use `IS NULL`, never `= NULL`. Nothing equals NULL, not even NULL.' },
+  q('sqp-allwins', 'Every account, even with no wins', 45, 'LEFT JOIN with the filter in ON, and COALESCE for the zeros.', [
+    { t: 'p', text: 'A common exam twist: "include accounts with none, showing 0". That needs a `LEFT JOIN`, and the filter on the right-hand table must go in the `ON` clause, not in `WHERE`.' },
+    { t: 'code', text: "SELECT a.name, COALESCE(SUM(d.amount), 0) AS won_total\nFROM accounts a\nLEFT JOIN deals d\n  ON d.account_id = a.id AND d.stage = 'Closed Won'\nGROUP BY a.id, a.name;" },
+    { t: 'warn', text: "`WHERE d.stage = 'Closed Won'` runs after the join, and an account with no deals has `NULL` there, so `WHERE` throws it away. Inside `ON`, the condition only decides which deals attach, and every account stays." },
+    { t: 'tip', text: '`SUM` of nothing is `NULL`, not 0. `COALESCE(SUM(...), 0)` turns it into 0. For counts, `COUNT(d.id)` already gives 0, but `COUNT(*)` gives 1 because the empty row still counts.' },
   ], {
-    prompt: 'Return the `name` of every account that has **no deals at all**. Sort A to Z.',
+    prompt: "Return **every** account `name` with `won_total`: the total amount of its **Closed Won** deals. Accounts with no Closed Won deals must still appear, with `0`. Order by `won_total` (highest first), then `name`.",
     starter: 'SELECT a.name\nFROM accounts a\n',
-    solution: 'SELECT a.name FROM accounts a LEFT JOIN deals d ON d.account_id = a.id WHERE d.id IS NULL ORDER BY a.name;',
-    hints: ['`LEFT JOIN deals d ON d.account_id = a.id` keeps every account.', 'Accounts with no deal have `NULL` in `d.id`: `WHERE d.id IS NULL`.', 'Finish with `ORDER BY a.name`.'],
+    solution: "SELECT a.name, COALESCE(SUM(d.amount), 0) AS won_total FROM accounts a LEFT JOIN deals d ON d.account_id = a.id AND d.stage = 'Closed Won' GROUP BY a.id, a.name ORDER BY won_total DESC, a.name;",
+    hints: ["`LEFT JOIN deals d ON d.account_id = a.id AND d.stage = 'Closed Won'` keeps every account and attaches only the wins.", 'Add `COALESCE(SUM(d.amount), 0) AS won_total` and `GROUP BY a.id, a.name`.', 'Finish with `ORDER BY won_total DESC, a.name`.'],
+    traps: [
+      { lacks: /LEFT\s+JOIN/i, say: 'a plain `JOIN` drops accounts that have no deals. Use `LEFT JOIN`.' },
+      { has: /WHERE[\s\S]*stage/i, say: "the stage filter is in `WHERE`, which removes the accounts with no wins. Move it into the `ON` clause: `ON d.account_id = a.id AND d.stage = 'Closed Won'`." },
+      { lacks: /COALESCE|IFNULL/i, say: 'accounts with no wins show `NULL` instead of 0. Wrap the sum: `COALESCE(SUM(d.amount), 0)`.' },
+    ],
   }),
 
   q('sqp-case', 'Bucket deals with CASE', 40, 'CASE WHEN turns numbers into labels.', [

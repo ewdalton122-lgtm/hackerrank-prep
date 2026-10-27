@@ -19,6 +19,9 @@ export const python = [
       { t: 'warn', text: '`"100"` (with quotes) is text, not a number. It is the same trap as numbers stored as text in Excel: `"5" + "5"` gives `"55"`, not `10`.' },
       { t: 'h', text: 'Arithmetic you will use a lot' },
       { t: 'code', text: '17 + 5     # 22\n17 / 5     # 3.4   (true division)\n17 // 5    # 3     (whole-number division, drops the remainder)\n17 % 5     # 2     (the remainder)\n2 ** 3     # 8     (power)\nround(3.14159, 2)   # 3.14' },
+      { t: 'h', text: 'Two shortcuts you will see everywhere' },
+      { t: 'code', text: 'total = 10\ntotal += 5        # same as total = total + 5, so now 15\ncount = 3\ncount -= 1        # same as count = count - 1, so now 2\n\nname = "Ava"\nprint(f"Hello, {name}! Total: {total}")   # Hello, Ava! Total: 15' },
+      { t: 'p', text: 'An **f-string** is text with an `f` in front of the quotes. Anything inside `{ }` is replaced by its value, which makes building a sentence for `print` easy.' },
     ],
     quiz: [
       {
@@ -169,7 +172,12 @@ export const python = [
       { t: 'analogy', text: 'A `for` loop is dragging a formula down a column. The **accumulator** (`total`) is the running sum cell at the bottom.' },
       { t: 'h', text: 'The accumulator pattern' },
       { t: 'p', text: '1) Start a counter or total **before** the loop. 2) Update it inside the loop. 3) Use it after the loop. A huge share of exam questions are variations of this.' },
-      { t: 'tip', text: '`range(3)` gives 0, 1, 2. It stops **before** the number you give it.' },
+      { t: 'h', text: 'Counting with range, and positions with enumerate' },
+      { t: 'code', text: 'for i in range(3):            # i is 0, 1, 2\nfor i in range(2, 5):         # i is 2, 3, 4  (start, stop)\nfor i in range(len(nums)):    # every position in nums\nfor i, x in enumerate(nums):  # position i and value x together' },
+      { t: 'tip', text: '`range` always stops **before** the stop number: `range(3)` gives 0, 1, 2.' },
+      { t: 'h', text: 'Stopping early: break and while' },
+      { t: 'code', text: 'ans = -1\nfor i in range(len(nums)):\n    if nums[i] == target:\n        ans = i\n        break          # leave the loop right now\nprint(ans)           # -1 if it was never found\n\nn = 100\nwhile n > 1:         # repeat while this is true\n    n = n // 2' },
+      { t: 'p', text: '`break` stops a loop at once. A `while` loop repeats as long as its condition is true, so something inside it must change, or it never stops.' },
     ],
     quiz: [
       {
@@ -301,6 +309,7 @@ export const python = [
       { t: 'h', text: 'The counting pattern' },
       { t: 'code', text: 'counts = {}\nfor word in ["a", "b", "a"]:\n    counts[word] = counts.get(word, 0) + 1\n# {"a": 2, "b": 1}' },
       { t: 'p', text: 'This is `COUNTIF` for every distinct value at once. Counting how often things appear solves a surprising share of assessment problems.' },
+      { t: 'code', text: 'for word, n in counts.items():   # each key together with its value\n    print(word, n)\n\nfrom collections import Counter  # the same counting in one line\ncounts = Counter(["a", "b", "a"])  # Counter({"a": 2, "b": 1})\ncounts["z"]                       # 0, no KeyError for a missing key' },
       { t: 'warn', text: 'Looking up a key that does not exist with `d[key]` raises a **KeyError**. Use `d.get(key, default)` when the key might be missing.' },
     ],
     quiz: [
@@ -389,7 +398,7 @@ export const python = [
       starter: 'def average(nums):\n    total = sum(nums)\n    print(total / len(nums))\n',
       tests: [
         { expr: 'average([2, 4, 6])', expected: '4.0' },
-        { expr: 'average([10])', expected: '10' },
+        { expr: 'average([10])', expected: '10.0' },
         { expr: 'average([])', expected: '0', hidden: true, edge: 'An empty list has no items to divide by. Check for it before dividing.' },
       ],
       hints: [

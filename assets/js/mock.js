@@ -11,6 +11,7 @@ import { itemsFor, ROLES, findItem } from '../../content/curriculum.js';
 
 const RUN_KEY = 'zta.mockrun';
 const LAST_KEY = 'zta.mocklast';
+const PLAIN = { mcq: 'multiple choice', sql: 'SQL problem', py: 'coding problem', prompt: 'prompt-engineering problem', written: 'written reply' };
 const TYPES = {
   mcq: { label: 'Multiple choice', sec: 'mcq' },
   sql: { label: 'SQL', sec: 'sql' },
@@ -26,7 +27,7 @@ const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 let timer = null;
 export function stopMock() { if (timer) { clearInterval(timer); timer = null; } }
 
-export const SPRINT = { id: 'mock-sprint', title: 'Review sprint', minutes: 20, generated: true, blurb: '12 multiple-choice questions drawn from the lessons you have studied, weighted toward the ones you got wrong.' };
+export const SPRINT = { id: 'mock-sprint', title: 'Review sprint', minutes: 20, generated: true, blurb: '12 multiple-choice questions from the lesson quizzes, mostly from lessons you have finished and weighted toward questions you got wrong.' };
 export const getMock = (id) => (id === SPRINT.id ? SPRINT : MOCKS.find((m) => m.id === id));
 export const allMocks = () => [...MOCKS, SPRINT];
 
@@ -127,10 +128,10 @@ function renderStart(host, mock, role) {
     <div class="card">
       <h2>Before you start</h2>
       <ul>
-        <li>${mock.generated ? '12 multiple-choice questions' : mix.map(([t, n]) => `${n} ${TYPES[t].label.toLowerCase()}`).join(', ')}.</li>
-        <li>Treat it like the real thing: one sitting, no notes, no outside help, no looking back at the lessons.</li>
+        <li>${mock.generated ? '12 multiple-choice questions' : mix.map(([t, n]) => `${n} ${PLAIN[t]}${n > 1 && t !== 'mcq' ? 's' : ''}`).join(', ')}.</li>
+        <li>Treat it like the real thing: one sitting, no notes, no looking back at the lessons.</li>
         <li>You can move between questions freely and change answers until you finish. Python and SQL are graded when you finish, against hidden tests.</li>
-        ${mix.some(([t]) => t === 'prompt') ? '<li>The prompt question needs an AI assistant in another tab. Paste its replies back in. Only the visible cases can be scored here.</li>' : ''}
+        ${mix.some(([t]) => t === 'prompt') ? '<li>The one exception is the prompt question: run your prompt in an AI assistant in another tab and paste its replies back in. (On the real exam a Run button uses the exam\'s own model, and opening another assistant is not allowed.) Only the visible cases can be scored here.</li>' : ''}
         <li>When time is up the exam submits itself.</li>
       </ul>
       <div class="field">Time allowed
@@ -143,6 +144,8 @@ function renderStart(host, mock, role) {
     </div>
     ${tries.length ? `<div class="card"><h2>Previous attempts</h2><table class="res"><thead><tr><th>When</th><th>Score</th><th>Result</th></tr></thead><tbody>${tries.map((m) => `<tr><td>${new Date(m.at).toLocaleString()}</td><td>${Math.round(m.pct)}%</td><td>${verdict(m.pct, bar)[0]}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
   host.querySelector('[data-act="begin"]').onclick = () => {
+    const other = read(RUN_KEY);
+    if (other && other.mockId !== mock.id && !confirm(`You have ${getMock(other.mockId)?.title || 'another mock exam'} in progress. Starting this one discards it. Continue?`)) return;
     const lim = Number(host.querySelector('input[name=lim]:checked').value);
     const run = { mockId: mock.id, startedAt: Date.now(), limit: lim * 60, answers: {}, cur: 0, role, ...(mock.generated ? { qs: buildSprint(role) } : {}) };
     if (mock.generated && !run.qs.length) { toast('No questions available yet'); return; }
@@ -196,14 +199,13 @@ function renderRun(host, mock, run, role) {
       if (left <= 0 && !finishing) { finishing = true; finish(true); }
     } else clock.textContent = `${fmtClock(elapsed)} elapsed`;
   };
-  tick();
-  timer = setInterval(tick, 1000);
-
   host.querySelector('[data-act="finish"]').onclick = () => {
     const open = qs.filter((q) => !answered(q, run.answers[q.id])).length;
     if (!confirm(open ? `${open} question${open > 1 ? 's are' : ' is'} unanswered. Finish and score anyway?` : 'Finish and score the exam?')) return;
     finishing = true; finish(false);
   };
+  tick();
+  if (!finishing) timer = setInterval(tick, 1000);
 
   async function finish(auto) {
     stopMock();
@@ -237,7 +239,7 @@ const tableHtml = (r) => !r.columns.length ? '' : `<div class="scroll"><table cl
 function bodySql(el, q, run, save, mark) {
   el.innerHTML = `<h3 style="margin-top:0">${esc(q.title)}</h3><p>${inline(q.prompt)}</p>
     <details class="schema"><summary>Tables</summary><ul>${DATASETS[q.data].doc.map((t) => `<li><code>${t.table}</code> (${esc(t.cols)}): ${esc(t.note)}</li>`).join('')}</ul></details>
-    <textarea class="editor" spellcheck="false" autocapitalize="off" aria-label="SQL query">${esc(run.answers[q.id] ?? q.starter)}</textarea>
+    <textarea class="editor" spellcheck="false" autocorrect="off" autocapitalize="off" aria-label="SQL query">${esc(run.answers[q.id] ?? q.starter)}</textarea>
     <div class="row" style="margin:12px 0"><button class="btn" data-act="run">Run query</button><span class="muted small st"></span></div>
     <div class="out"></div>`;
   const ta = el.querySelector('.editor');
@@ -259,7 +261,7 @@ function bodyPy(el, q, run, save, mark) {
   el.innerHTML = `<h3 style="margin-top:0">${esc(q.title)}</h3><p>${inline(q.prompt)}</p>
     <div class="io"><div><span class="lbl">Sample input</span><pre class="code"><code>${esc(shown.input.length > 200 ? shown.input.slice(0, 200) + '...' : shown.input.replace(/\n$/, ''))}</code></pre></div>
     <div><span class="lbl">Sample output</span><pre class="code"><code>${esc(shown.output)}</code></pre></div></div>
-    <textarea class="editor" spellcheck="false" autocapitalize="off" aria-label="Python code">${esc(run.answers[q.id] ?? q.starter)}</textarea>
+    <textarea class="editor" spellcheck="false" autocorrect="off" autocapitalize="off" aria-label="Python code">${esc(run.answers[q.id] ?? q.starter)}</textarea>
     <div class="row" style="margin:12px 0"><button class="btn" data-act="run">Run the sample tests</button><span class="muted small st"></span></div>
     <ul class="tests"></ul><p class="small muted">Sample tests show here. More tests, including ones for unusual input, run when you finish.</p>`;
   const ta = el.querySelector('.editor');
@@ -273,9 +275,9 @@ function bodyPy(el, q, run, save, mark) {
     st.innerHTML = '<span class="spinner"></span>Running...';
     try {
       await pythonReady();
-      const res = await runPython(ta.value, sample.map((t) => ({ input: t.input, expected: t.output })), 6000, 'io');
+      const res = await runPython(ta.value, sample.map((t) => ({ input: t.input, expected: t.output })), undefined, 'io');
       st.textContent = '';
-      if (res.timeout) list.innerHTML = '<li class="fail"><span>&#10007;</span><div>Your code ran for more than 6 seconds and was stopped.</div></li>';
+      if (res.timeout) list.innerHTML = '<li class="fail"><span>&#10007;</span><div>Your code took too long and was stopped.</div></li>';
       else if (res.error) list.innerHTML = `<li class="fail"><span>&#10007;</span><div>${esc(res.error.type)}: ${esc(res.error.msg)}</div></li>`;
       else list.innerHTML = res.tests.map((t, i) => `<li class="${t.ok ? 'pass' : 'fail'}"><span>${t.ok ? '&#10003;' : '&#10007;'}</span><div>Sample test ${i + 1} ${t.ok ? 'passed' : t.err ? `stopped with ${esc(t.err.type)}` : 'did not match'}</div></li>`).join('');
     } catch { st.textContent = ''; list.innerHTML = '<li class="fail"><span>&#10007;</span><div>Python could not start. Check your internet connection.</div></li>'; }
@@ -292,7 +294,7 @@ function bodyPrompt(el, q, run, save, mark) {
     ${q.cases.map((c, i) => `<div class="case" data-ci="${i}"><b>Case ${i + 1}</b>
       <pre class="code">${esc(c.input)}</pre>
       <div class="row" style="margin-bottom:8px"><button class="btn" data-act="copy">Copy my prompt with this input</button></div>
-      <textarea rows="2" data-role="out" style="font-family:var(--mono)" placeholder="Paste the assistant's reply here">${esc(a.replies[i] || '')}</textarea>
+      <textarea rows="2" data-role="out" autocorrect="off" autocapitalize="off" spellcheck="false" style="font-family:var(--mono)" placeholder="Paste the assistant's reply here">${esc(a.replies[i] || '')}</textarea>
       <div class="row" style="margin-top:8px"><button class="btn" data-act="check">Check this case</button></div><div class="cfb"></div></div>`).join('')}`;
   const tmpl = el.querySelector('[data-role="tmpl"]');
   tmpl.addEventListener('input', () => { a.tmpl = tmpl.value; save(); mark(); });
@@ -350,8 +352,8 @@ async function scoreRun(mock, run, qs, role) {
           if (pythonOk === null) { try { await pythonReady(); pythonOk = true; } catch { pythonOk = false; } }
           if (!pythonOk) detail = { lead: 'Python could not start, so this was not scored.' };
           else {
-            const res = await runPython(a, q.tests.map((t) => ({ input: t.input, expected: t.output })), 6000, 'io');
-            if (res.timeout) detail = { lead: 'Your code ran for more than 6 seconds.', timeout: true };
+            const res = await runPython(a, q.tests.map((t) => ({ input: t.input, expected: t.output })), undefined, 'io');
+            if (res.timeout) detail = { lead: 'Your code took too long and was stopped.', timeout: true };
             else if (res.error) detail = { lead: `${res.error.type}: ${res.error.msg}`, error: true };
             else {
               // Candidates report that the real coding question is effectively all or nothing, so it is scored that way here.
@@ -363,7 +365,8 @@ async function scoreRun(mock, run, qs, role) {
       } else if (q.type === 'prompt') {
         const replies = a?.replies || {};
         const oks = q.cases.map((c, i) => !!(replies[i] || '').trim() && diagnoseText(replies[i].replace(/\r/g, ''), c.expected).ok);
-        score = oks.filter(Boolean).length / q.cases.length;
+        // Partial passes reportedly earn very little (4 of 8 cases earned 4 of 50 points), so practice scores it all or nothing.
+        score = oks.every(Boolean) ? 1 : 0;
         detail = { oks, tmpl: a?.tmpl || '' };
       } else if (q.type === 'written') {
         const text = String(a || '');
@@ -396,7 +399,8 @@ async function scoreRun(mock, run, qs, role) {
 // ---------------------------------------------------------------- results
 function renderResult(host, res, role) {
   const mock = getMock(res.mockId) || { title: res.title };
-  const qs = res.qs || getMock(res.mockId).questions;
+  // Only questions that were scored. A later content update may have renamed or removed some.
+  const qs = (res.qs || getMock(res.mockId)?.questions || []).filter((q) => res.perQ?.[q.id]);
   const bar = ROLES[role]?.bar ?? 60;
   const full = res.mockId !== SPRINT.id;
   const [vt, vk] = full ? verdict(res.pct, bar) : ['Practice only, no pass mark', 'gray'];
@@ -415,8 +419,8 @@ function renderResult(host, res, role) {
       <div class="stagehead"><h2>Score: ${Math.round(res.pct)}%</h2><span class="badge ${vk}">${vt}</span></div>
       ${full ? `<p><b>About ${Math.round(res.pct * TOTAL / 100)} of ${TOTAL} points.</b> You need about ${Math.ceil(bar * TOTAL / 100)} for ${esc(ROLES[role]?.name || '')}.</p>` : ''}
       ${full ? `<div class="meter"><i style="width:${Math.round(res.pct)}%"></i><b style="left:${bar}%" title="Pass mark ${bar}%"></b></div>
-      <p class="small muted" style="margin-top:8px">The marker is the ${bar}% pass mark for ${esc(ROLES[role]?.name || '')}. Practice scores run a little lower than real-exam scores under pressure, which is why the target is ${bar + 10}% or more, twice in a row.</p>` : ''}
-      <p class="small muted">This is a practice score from questions written for this site. It is an honest signal, not a prediction. Each skill area is worth the points candidates report for the real exam, and coding is scored all or nothing, as reported.</p>
+      <p class="small muted" style="margin-top:8px">The marker is the ${bar}% pass mark for ${esc(ROLES[role]?.name || '')}. Real-exam scores usually run a little lower than practice scores, because of nerves and unfamiliar questions. That is why the target is ${bar + 10}% or more, twice in a row.</p>` : ''}
+      <p class="small muted">This is a practice score from questions written for this site. It is an honest signal, not a prediction. Each skill area is worth the points candidates report for the real exam, and coding and prompt engineering are scored all or nothing, because candidates report that partial passes earn very little.</p>
     </div>
     <div class="card"><h2>By skill area</h2><div class="secs">${Object.entries(res.sectionPct).map(([k, v]) => `<div class="sec"><div class="sec-head"><b>${esc(secName[k] || k)}</b><span>${full ? `${Math.round(v * secW[k] / 100)} of ${secW[k]} points` : `${Math.round(v)}%`}</span></div><div class="bar"><i style="width:${Math.round(v)}%"></i></div><p class="small muted">${res.sectionN[k]} question${res.sectionN[k] > 1 ? 's' : ''}</p></div>`).join('')}</div>
       ${weakest && weakest[1] < 100 ? `<p style="margin-top:12px"><b>Weakest area:</b> ${esc(secName[weakest[0]] || weakest[0])}.</p>` : ''}</div>

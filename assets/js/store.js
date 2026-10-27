@@ -44,6 +44,7 @@ export function replaceState(next) {
 
 export function resetAll() {
   state = blank();
+  try { localStorage.removeItem('zta.mockrun'); localStorage.removeItem('zta.mocklast'); } catch { /* storage unavailable */ }
   persist();
   schedulePush();
   emit();
@@ -87,7 +88,21 @@ export function noteMiss(itemId, key) {
   }, { silent: true });
 }
 
+/** Restore a backup file. It is merged with what is here, so a restore can never lose progress. */
+export function restoreState(next) {
+  if (!next || next.v !== 1 || typeof next.progress !== 'object' || next.progress === null) throw new Error('Not a backup file');
+  state = merge(state, { ...blank(), ...next });
+  persist();
+  schedulePush();
+  emit();
+}
+
 // ---------- merging (used when local and cloud copies differ) ----------
+// Key-order-independent JSON, used to tell whether a merge actually changed anything.
+const canon = (o) => JSON.stringify(o, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((x) => [x, v[x]])) : v));
+const same = (x, y) => canon({ ...merge(x, x), updatedAt: 0 }) === canon({ ...merge(y, y), updatedAt: 0 });
+const synced = () => { if (typeof document !== 'undefined') document.dispatchEvent(new Event('zta:synced')); };
+
 function merge(a, b) {
   const out = blank();
   const newer = (a.updatedAt || 0) >= (b.updatedAt || 0) ? a : b;
@@ -101,7 +116,12 @@ function merge(a, b) {
     const pick = (x.done ? 1 : 0) !== (y.done ? 1 : 0) ? (x.done ? x : y) : ((x.at || 0) >= (y.at || 0) ? x : y);
     const missed = { ...x.missed };
     Object.entries(y.missed || {}).forEach(([k, v]) => { missed[k] = Math.max(missed[k] || 0, v); });
-    out.progress[id] = { ...pick, missed, parts: { ...(x.parts || {}), ...(y.parts || {}), ...(pick.parts || {}) } };
+    out.progress[id] = {
+      ...pick, missed,
+      parts: { ...(x.parts || {}), ...(y.parts || {}), ...(pick.parts || {}) },
+      ...(x.q || y.q ? { q: { ...(x.q || {}), ...(y.q || {}) } } : {}),
+      ...(x.cases || y.cases ? { cases: { ...(x.cases || {}), ...(y.cases || {}) } } : {}),
+    };
   });
   const seen = new Set();
   out.mocks = [...(a.mocks || []), ...(b.mocks || [])].filter((m) => { const k = `${m.id}@${m.at}`; if (seen.has(k)) return false; seen.add(k); return true; }).sort((x, y) => x.at - y.at);
@@ -134,7 +154,7 @@ export let linkError = false;
 export async function initRemote() {
   if (!remoteEnabled()) return;
   try {
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.4');
     client = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
       auth: { flowType: 'implicit', persistSession: true, detectSessionInUrl: false },
     });
@@ -151,6 +171,8 @@ export async function initRemote() {
     session = data.session;
     client.auth.onAuthStateChange((_event, s) => {
       session = s;
+      // Supabase re-announces the session whenever the tab becomes visible again. That is a good
+      // moment to fetch progress made on another device; pull() stays quiet when nothing changed.
       setTimeout(async () => { if (s) await pull(); else { syncStatus = 'local'; emit(); } }, 0);
     });
     if (session) await pull();
@@ -169,10 +191,13 @@ async function pull() {
   if (!client || !session) return;
   const { data, error } = await client.from('user_state').select('state').eq('user_id', session.user.id).maybeSingle();
   if (error) { syncStatus = 'error'; emit(); return; }
-  state = data?.state ? merge(state, data.state) : state;
-  persist();
-  await push();
-  emit();
+  const remote = data?.state || null;
+  const merged = remote ? merge(state, remote) : state;
+  const localChanged = !same(merged, state);
+  if (localChanged) { state = merged; persist(); synced(); }
+  if (!remote || !same(merged, remote)) await push({ merged: true });
+  else if (syncStatus !== 'saved') { syncStatus = 'saved'; emit(); }
+  if (localChanged) emit();
 }
 
 function schedulePush() {
@@ -182,8 +207,16 @@ function schedulePush() {
   pushTimer = setTimeout(push, 1500);
 }
 
-async function push() {
+async function push({ merged = false } = {}) {
   if (!client || !session) return;
+  if (!merged) {
+    // Merge the cloud copy in first, so progress saved from another device is never overwritten.
+    const { data } = await client.from('user_state').select('state').eq('user_id', session.user.id).maybeSingle();
+    if (data?.state) {
+      const m = merge(state, data.state);
+      if (!same(m, state)) { state = m; persist(); synced(); setTimeout(emit, 0); }
+    }
+  }
   const { error } = await client.from('user_state').upsert({
     user_id: session.user.id, state, updated_at: new Date().toISOString(),
   });

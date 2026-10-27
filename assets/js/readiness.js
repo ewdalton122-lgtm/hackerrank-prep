@@ -20,7 +20,7 @@ const ACCURACY_FLOOR = 0.65;
 
 export function computeReadiness(state) {
   const role = state.profile?.role || 'ds';
-  const items = itemsFor(role);
+  const items = itemsFor(role).filter((i) => !(i.optional || i.stage.optional));
   const progress = state.progress || {};
   const done = (i) => !!progress[i.id]?.done;
 

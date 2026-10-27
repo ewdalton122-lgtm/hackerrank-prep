@@ -19,8 +19,8 @@ export const sqw = [
     { t: 'tip', text: 'Read the wording for the tie rule. "Exactly N rows" points to `ROW_NUMBER`. "N levels, keep all ties" points to `DENSE_RANK`.' },
   ], {
     prompt: 'Return every employee whose salary is among the **top 2 distinct salaries** in their department: `dept_id`, `name`, `salary`. Everyone who ties at a kept salary is included. Order by `dept_id`, then salary highest first, then name.',
-    starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         DENSE_RANK() OVER (PARTITION BY ) AS r\n  FROM employees\n)\n',
-    solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS r FROM employees) WHERE r <= 2 ORDER BY dept_id, salary DESC, name;',
+    starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         DENSE_RANK() OVER (PARTITION BY ) AS r\n  FROM employees\n) t\n',
+    solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS r FROM employees) t WHERE r <= 2 ORDER BY dept_id, salary DESC, name;',
     traps: [
       { has: /ROW_NUMBER/i, say: '`ROW_NUMBER` gives every row its own number, so two people tied on salary get different numbers and one can be cut. Use `DENSE_RANK`, where ties share a number.' },
       { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY dept_id` the ranking runs over the whole company instead of restarting in each department.' },
@@ -90,7 +90,7 @@ export const sqw = [
   mk('sqw-firstlast', 'Window drill 4: compare each row to the first with FIRST_VALUE', 50, 'Bring one value from the start of the group onto every row.', 'sales', [
     { t: 'p', text: '`FIRST_VALUE(x) OVER (PARTITION BY g ORDER BY d)` copies the first row\'s `x` in each group onto every row of that group. It is useful for "change since the first deal" style questions.' },
     { t: 'code', text: 'SELECT rep_id, close_date, amount,\n       FIRST_VALUE(amount) OVER (PARTITION BY rep_id ORDER BY close_date) AS first_amount\nFROM deals;' },
-    { t: 'warn', text: '`LAST_VALUE` is a trap. With the default frame it stops at the **current row**, so it just returns the current row\'s own value. To get the true last value, add `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`.' },
+    { t: 'warn', text: '`LAST_VALUE` is a trap. With the default frame it stops at the **current row** (plus any rows tied with it on the sort), so it usually just returns the current row\'s own value. To get the true last value, add `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`.' },
   ], {
     prompt: 'For **Closed Won** deals, return the rep `name`, `close_date`, `amount`, and `first_amount`: the amount of that rep\'s earliest Closed Won deal. Order by `name`, then `close_date`.',
     starter: "SELECT r.name, d.close_date, d.amount,\n       FIRST_VALUE(d.amount) OVER (PARTITION BY ) AS first_amount\nFROM deals d\nJOIN reps r ON r.id = d.rep_id\nWHERE d.stage = 'Closed Won'\n",
@@ -105,9 +105,9 @@ export const sqw = [
   }, [
     {
       q: 'You write LAST_VALUE(amount) OVER (PARTITION BY rep ORDER BY close_date) and every row just shows its own amount. Why?',
-      options: ['The data has no duplicates', 'The default frame ends at the current row, so the "last" row it sees is the current one', 'LAST_VALUE only works without a PARTITION BY', 'The ORDER BY must be descending'],
+      options: ['Each rep has only one deal, so there is nothing else to show', 'The default frame ends at the current row', 'LAST_VALUE ignores PARTITION BY and looks at one row', 'The ORDER BY inside OVER must be descending'],
       answer: 1,
-      explain: ['Duplicates have nothing to do with it.', 'Correct. Extend the frame to UNBOUNDED FOLLOWING, or use FIRST_VALUE with the opposite sort.', 'It works with PARTITION BY. The frame is the issue.', 'Sorting descending would just make the default frame end at the other side. A proper frame is the real fix.'],
+      explain: ['Reps have several deals here. The rows exist; the frame just stops before them.', 'Correct. The "last" row it can see is the current one. Extend the frame to UNBOUNDED FOLLOWING, or use FIRST_VALUE with the opposite sort.', 'It works with PARTITION BY. The frame is the issue.', 'Sorting descending does not help: the default frame still ends at the current row. Extend the frame instead.'],
     },
   ]),
 
@@ -173,12 +173,12 @@ export const sqw = [
 
   mk('sqw-second', 'Window drill 8: the Nth row per group', 50, 'Second-best, third-best, and so on.', 'sales', [
     { t: 'p', text: 'To get the **second** largest in each group, number the rows with `ROW_NUMBER`, sorted largest first, and keep `rn = 2`. The same pattern gives any Nth place.' },
-    { t: 'code', text: 'SELECT name, amount\nFROM (\n  SELECT r.name, d.amount,\n         ROW_NUMBER() OVER (PARTITION BY d.rep_id ORDER BY d.amount DESC) AS rn\n  FROM deals d JOIN reps r ON r.id = d.rep_id\n)\nWHERE rn = 2;' },
+    { t: 'code', text: 'SELECT name, amount\nFROM (\n  SELECT r.name, d.amount,\n         ROW_NUMBER() OVER (PARTITION BY d.rep_id ORDER BY d.amount DESC) AS rn\n  FROM deals d JOIN reps r ON r.id = d.rep_id\n) t\nWHERE rn = 2;' },
     { t: 'warn', text: 'If two rows tie for first, `ROW_NUMBER` still gives the second one the number 2. If the question means "second **distinct** value", use `DENSE_RANK` instead.' },
   ], {
     prompt: 'For each rep, return the rep `name`, and the `id` and `amount` of their **second largest deal** (any stage). Order by name.',
-    starter: 'SELECT name, id, amount\nFROM (\n  SELECT r.name, d.id, d.amount,\n         ROW_NUMBER() OVER (PARTITION BY ) AS rn\n  FROM deals d\n  JOIN reps r ON r.id = d.rep_id\n)\n',
-    solution: 'SELECT name, id, amount FROM (SELECT r.name, d.id, d.amount, ROW_NUMBER() OVER (PARTITION BY d.rep_id ORDER BY d.amount DESC) AS rn FROM deals d JOIN reps r ON r.id = d.rep_id) WHERE rn = 2 ORDER BY name;',
+    starter: 'SELECT name, id, amount\nFROM (\n  SELECT r.name, d.id, d.amount,\n         ROW_NUMBER() OVER (PARTITION BY ) AS rn\n  FROM deals d\n  JOIN reps r ON r.id = d.rep_id\n) t\n',
+    solution: 'SELECT name, id, amount FROM (SELECT r.name, d.id, d.amount, ROW_NUMBER() OVER (PARTITION BY d.rep_id ORDER BY d.amount DESC) AS rn FROM deals d JOIN reps r ON r.id = d.rep_id) t WHERE rn = 2 ORDER BY name;',
     traps: [
       { lacks: /PARTITION\s+BY/i, say: 'without `PARTITION BY d.rep_id` you get one second-place deal for the whole company, not one per rep.' },
       { lacks: /amount\s+DESC/i, say: 'sort the amount `DESC` inside the window so rank 1 is the largest deal.' },
@@ -188,7 +188,7 @@ export const sqw = [
   }),
 ];
 
-// ---------------------------------------------------------------- Topics from Jack's guide that were missing
+// ---------------------------------------------------------------- Join and subquery topics named in candidates' study guides
 // "Know your joins: INNER, LEFT, RIGHT, FULL OUTER" and "subqueries within a SELECT query".
 export const sqj = [
   mk('sqj-right', 'RIGHT JOIN and FULL OUTER JOIN', 45, 'The two joins people forget.', 'staff', [
@@ -217,13 +217,13 @@ export const sqj = [
       q: 'Table A has 5 rows, table B has 4 rows, and 3 rows match. How many rows does A FULL OUTER JOIN B return (assuming each row matches at most once)?',
       options: ['3', '5', '6', '9'],
       answer: 2,
-      explain: ['That is the INNER JOIN result.', 'That is the LEFT JOIN result: all 5 rows of A.', 'Correct. 3 matched, plus 2 left over from A, plus 1 left over from B, gives 6.', 'That would be every possible pairing (a CROSS JOIN is 5 x 4 = 20), and 9 is just 5 + 4.'],
+      explain: ['That is the INNER JOIN result.', 'That is the LEFT JOIN result: all 5 rows of A.', 'Correct. 3 matched, plus 2 left over from A, plus 1 left over from B, gives 6.', '9 is just 5 + 4, which counts the 3 matched pairs twice. Each matched pair is one row.'],
     },
     {
       q: 'The exam database is MySQL. How do you get the effect of a FULL OUTER JOIN there?',
-      options: ['Write FULL JOIN instead', 'Combine a LEFT JOIN and a RIGHT JOIN with UNION', 'Use INNER JOIN twice', 'It is impossible'],
+      options: ['Write FULL JOIN, the short form MySQL accepts', 'Combine a LEFT JOIN and a RIGHT JOIN with UNION', 'Run INNER JOIN twice and combine with UNION ALL', 'Use a CROSS JOIN and filter it with WHERE'],
       answer: 1,
-      explain: ['MySQL does not accept FULL JOIN either.', 'Correct. The two joins together cover every row from both sides, and UNION removes the duplicated matches.', 'That only returns rows that match.', 'The UNION workaround does it.'],
+      explain: ['MySQL does not accept FULL JOIN either.', 'Correct. The two joins together cover every row from both sides, and UNION removes the duplicated matches.', 'INNER JOIN only returns rows that match, so the unmatched rows never appear.', 'A CROSS JOIN pairs every row with every row; filtering it cannot bring back unmatched rows with NULLs.'],
     },
   ]),
 
@@ -246,9 +246,9 @@ export const sqj = [
   }, [
     {
       q: 'What does "correlated" mean for a subquery?',
-      options: ['It uses JOIN', 'It refers to a column of the outer query, so it is evaluated per outer row', 'It returns more than one column', 'It runs only once, before the outer query'],
+      options: ['It joins two tables inside the subquery', 'It uses a column from the outer query', 'It returns several columns, one per outer column', 'It runs once, and its result is reused for every row'],
       answer: 1,
-      explain: ['A correlated subquery does not need a JOIN.', 'Correct. The reference to the outer row (like e.dept_id) is what makes it correlated.', 'In a SELECT list it must return a single value.', 'A subquery that runs once is uncorrelated.'],
+      explain: ['A correlated subquery does not need a JOIN.', 'Correct. The reference to the outer row (like e.dept_id) is what makes it correlated, so it is evaluated once per outer row.', 'In a SELECT list it must return a single value.', 'A subquery that runs once is uncorrelated.'],
     },
   ]),
 ];

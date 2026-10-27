@@ -1,7 +1,7 @@
 import { computeReadiness, pct, SECTIONS } from './readiness.js';
 import { REFERENCE } from '../../content/reference.js';
-import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signInPassword, setPassword, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
-import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/curriculum.js';
+import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signInPassword, setPassword, signOut, fetchInternal, verifyCode, linkError, setPart, restoreState, resetAll, syncStatus } from './store.js';
+import { STAGES, ROLES, itemsFor, findItem, requiredParts, stageNum, stageName } from '../../content/curriculum.js';
 import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } from './planner.js';
 import { esc, inline, fmtMin, toast, renderBlocks, feedback } from './ui.js';
 import { mountQuiz, mountPython, mountSql, mountPrompt, mountWritten } from './components.js';
@@ -42,6 +42,8 @@ function shell(inner, active) {
       <main class="main" id="main">${s.profile && active && active !== '#/today' && !location.hash.startsWith('#/mock/') ? heroHtml(s, 'slim') : ''}${inner}</main>
     </div>`;
   paintHeroes();
+  const nav = app.querySelector('.nav'), on = nav?.querySelector('a.active');
+  if (on && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = on.offsetLeft - nav.offsetLeft - 24;
   return document.getElementById('main');
 }
 
@@ -85,12 +87,12 @@ function bindProfileForm(onSaved) {
   const preview = () => {
     const v = read();
     const box = document.getElementById('preview');
-    const pv = previewPlan(v.role, v.examDate, v.studyDays);
+    const pv = previewPlan(v.role, v.examDate, v.studyDays, new Date(), getState().progress || {});
     if (!pv) { box.innerHTML = 'Choose an exam date and at least one study day to see your daily target.'; return; }
     if (pv.days < 1) { box.innerHTML = 'That date is too soon to plan for. Pick a later date.'; return; }
     const heavy = pv.perDay > 180;
     box.className = `fb ${heavy ? 'hint' : 'info'}`;
-    box.innerHTML = `<b class="lead">About ${pv.perDay} minutes per study day</b>The full path is about ${Math.round(pv.total / 60)} hours across ${pv.days} study days (the last few are kept as buffer). ${heavy ? 'That is a lot alongside a full-time job. Consider a later date or more study days.' : 'That is a steady pace you can sustain.'}`;
+    box.innerHTML = `<b class="lead">About ${pv.perDay} minutes per study day</b>${pv.remaining < pv.total ? `About ${Math.round(pv.remaining / 60)} of the ${Math.round(pv.total / 60)} hours are left` : `The full path is about ${Math.round(pv.total / 60)} hours`}, across ${pv.days} study days (the last few are kept as buffer). ${heavy ? 'That is a lot alongside a full-time job. Consider a later date or more study days.' : 'That is a steady pace you can sustain.'}`;
   };
   form.addEventListener('input', preview);
   preview();
@@ -129,6 +131,8 @@ function viewToday() {
     behind: ['Behind plan', 'warn', `Your daily target has risen from about ${plan.baseline} to ${plan.perDay} minutes. Add a study day, or move the exam date in Settings.`],
     done: ['Path complete', 'ok', 'Every item is done. Run another timed mock or revisit weak spots.'],
     past: ['Exam date passed', 'bad', 'Your exam date has passed. Update it in Settings to get a fresh plan.'],
+    examday: ['Exam day', 'ok', 'It is exam day. No new lessons today. Skim the Reference page, warm up with one easy SQL drill, and read every question twice. You have prepared for this.'],
+    nodays: ['No study days left', 'warn', 'There are no study days left before your exam. Add study days or move the exam date in Settings.'],
   }[plan.status];
   const queue = plan.queue;
   const weak = Object.entries(s.progress)
@@ -141,21 +145,23 @@ function viewToday() {
     ${heroHtml(s, 'full', { eyebrow: `${greet} \u00b7 ${ROLES[s.profile.role].name} track \u00b7 exam ${fmtDate(s.profile.examDate)}` })}
     <div class="grid cols-3" style="margin-bottom:18px">
       <div class="stat"><div class="n">${plan.daysLeft}</div><div class="l">days to your exam</div></div>
-      <div class="stat"><div class="n">${plan.perDay}<span style="font-size:1rem"> min</span></div><div class="l">target per study day</div></div>
+      <div class="stat"><div class="n">${['past', 'examday', 'nodays'].includes(plan.status) ? '&ndash;' : `${plan.perDay}<span style="font-size:1rem"> min</span>`}</div><div class="l">target per study day</div></div>
       <div class="stat"><div class="n">${plan.studiedToday}<span style="font-size:1rem"> min</span></div><div class="l">studied today</div></div>
       <a class="stat" href="#/readiness" style="display:block;text-decoration:none"><div class="n">${ready.enoughData ? pct(ready.overall) : '...'}</div><div class="l">readiness${ready.enoughData && ready.focus ? `. Focus: ${esc(ready.focus.name)}` : ' (builds as you practise)'}</div></a>
     </div>
     ${journeyMap(s)}
     <div class="card">
-      <div class="stagehead"><h2>${statusMsg[0] === 'On track' ? 'Your plan' : 'Your plan'}</h2>${pill(statusMsg[0], statusMsg[1])}</div>
+      <div class="stagehead"><h2>Your plan</h2>${pill(statusMsg[0], statusMsg[1])}</div>
       <p>${statusMsg[2]}</p>
       ${plan.tooHeavy ? feedback('hint', 'This pace is heavy.', ['At more than 3 hours a day, retention drops. Consider moving the exam date later or adding weekend study days in Settings.']) : ''}
       <div class="bar"><i style="width:${plan.pct}%"></i></div>
-      <p class="small muted" style="margin-top:8px">${plan.doneItems} of ${plan.itemCount} items done. About ${fmtMin(plan.remaining)} left. ${plan.buffer} study day${plan.buffer === 1 ? '' : 's'} are held back as buffer.</p>
+      <p class="small muted" style="margin-top:8px">${plan.doneItems} of ${plan.itemCount} items done. About ${fmtMin(plan.remaining)} left. ${plan.buffer} study day${plan.buffer === 1 ? '' : 's'} ${plan.buffer === 1 ? 'is' : 'are'} held back as buffer.</p>
+      ${remoteEnabled() && !getUser() ? '<p class="small" style="margin-top:8px">Your progress is saved only in this browser. <a href="#/settings">Sign in</a> to keep it safe and pick up where you left off on your phone.</p>' : ''}
     </div>
     <div class="card">
       <div class="stagehead"><h2>${plan.isStudyDay ? "Today's session" : 'Up next (today is a rest day)'}</h2>${plan.nextItem ? `<a class="btn primary" href="#/item/${plan.nextItem.id}">${plan.doneItems ? 'Continue' : 'Start'}</a>` : ''}</div>
-      ${queue.length ? `<ul class="items">${queue.map((it, i) => itemRow(it, i === 0)).join('')}</ul>` : '<p>Nothing left. Great work.</p>'}
+      ${queue.length ? `<ul class="items">${queue.map((it, i) => itemRow(it, i === 0)).join('')}</ul>` : `<p>Every required item is done. Stay sharp until exam day: one timed mock every few days, and clear your review list in between.</p>
+        <div class="row"><a class="btn primary" href="#/mocks">Take a timed mock</a><a class="btn" href="#/review">Review missed questions</a><a class="btn ghost" href="#/reference">Skim the Reference</a></div>`}
     </div>
     <div class="grid cols-2">
       <div class="card"><h2>Last 7 days</h2>
@@ -180,8 +186,8 @@ function journeyMap(s) {
     return { st, done, total: req.length, pct: req.length ? Math.round((done / req.length) * 100) : 0 };
   });
   const current = rows.findIndex((r) => r.done < r.total);
-  return `<div class="card"><div class="stagehead"><h2>Where you are on the path</h2><span class="muted small">${current === -1 ? 'All stages complete' : `Now on Stage ${rows[current].st.num}`}</span></div>
-    <div class="journey">${rows.map((r, i) => `<a href="#/roadmap" class="jstep ${r.pct === 100 ? 'done' : i === current ? 'now' : ''}"><span class="jn">${r.pct === 100 ? '&#10003;' : r.st.num}</span><span class="jt">${esc(r.st.title.replace(/ \(.*\)/, ''))}</span><span class="jbar"><i style="width:${r.pct}%"></i></span><span class="jp">${r.done}/${r.total}</span></a>`).join('')}</div></div>`;
+  return `<div class="card"><div class="stagehead"><h2>Where you are on the path</h2><span class="muted small">${current === -1 ? 'All stages complete' : `Now on Stage ${stageNum(rows[current].st, role)}`}</span></div>
+    <div class="journey">${rows.map((r, i) => `<a href="#/roadmap" class="jstep ${r.pct === 100 ? 'done' : i === current ? 'now' : ''}"><span class="jn">${r.pct === 100 ? '&#10003;' : stageNum(r.st, role)}</span><span class="jt">${esc(r.st.title.replace(/ \(.*\)/, ''))}</span><span class="jbar"><i style="width:${r.pct}%"></i></span><span class="jp">${r.done}/${r.total}</span></a>`).join('')}</div></div>`;
 }
 
 function itemKind(it) {
@@ -198,7 +204,7 @@ function itemKind(it) {
 function itemRow(it, isNext = false) {
   const done = getState().progress[it.id]?.done;
   const st = it.noStage ? null : (it.stage || findItem(it.id)?.stage);
-  return `<li><a class="item" href="#/item/${it.id}"><span class="dot ${done ? 'done' : isNext ? 'next' : ''}">${done ? '&#10003;' : ''}</span><span class="t">${esc(it.title)}<small>${st ? `Stage ${st.num}: ${esc(st.title)} &middot; ` : ''}${itemKind(it)}</small></span><span class="m">${fmtMin(it.minutes)}</span></a></li>`;
+  return `<li><a class="item" href="#/item/${it.id}"><span class="dot ${done ? 'done' : isNext ? 'next' : ''}">${done ? '&#10003;' : ''}</span><span class="t">${esc(it.title)}<small>${st ? `${esc(stageName(st, getState().profile.role))} &middot; ` : ''}${itemKind(it)}</small></span><span class="m">${fmtMin(it.minutes)}</span></a></li>`;
 }
 
 // ------------------------------------------------------------------ roadmap
@@ -212,10 +218,12 @@ function viewRoadmap() {
   const main = shell(`
     <div class="pagehead"><h1>Roadmap</h1><p>Work top to bottom. Everything stays unlocked, so you can jump around, but the highlighted item is the best next step.</p></div>
     ${mine.map((st) => {
-      const done = st.items.filter((i) => s.progress[i.id]?.done).length;
-      const mins = st.items.reduce((a, i) => a + i.minutes, 0);
-      const pct = Math.round((done / st.items.length) * 100);
-      return `<div class="card"><div class="stagehead"><h2>Stage ${st.num}: ${esc(st.title)}${st.optional ? ' ' + pill('Optional', 'gray') : ''}</h2><span class="muted small">${done}/${st.items.length} done &middot; ${fmtMin(mins)}</span></div>
+      const req = st.items.filter((i) => !i.optional);
+      const optN = st.items.length - req.length;
+      const done = req.filter((i) => s.progress[i.id]?.done).length;
+      const mins = req.reduce((a, i) => a + i.minutes, 0);
+      const pct = req.length ? Math.round((done / req.length) * 100) : 0;
+      return `<div class="card"><div class="stagehead"><h2>${esc(stageName(st, role))}${st.optional ? ' ' + pill('Optional', 'gray') : ''}</h2><span class="muted small">${done}/${req.length} done &middot; ${fmtMin(mins)}${optN ? ` &middot; plus ${optN} optional` : ''}</span></div>
         <p class="muted">${esc(st.summary)}</p><div class="bar ${pct === 100 ? 'ok' : ''}" style="margin-bottom:8px"><i style="width:${pct}%"></i></div>
         <ul class="items">${st.items.map((i) => itemRow({ ...i, noStage: true }, next?.id === i.id)).join('')}</ul></div>`;
     }).join('')}
@@ -238,7 +246,7 @@ function viewItem(id) {
   const done = () => !!getState().progress[id]?.done;
 
   const main = shell(`
-    <div class="crumbs"><a href="#/roadmap">Roadmap</a> / Stage ${item.stage.num}: ${esc(item.stage.title)}</div>
+    <div class="crumbs"><a href="#/roadmap">Roadmap</a> / ${esc(stageName(item.stage, role))}</div>
     <div class="pagehead"><div class="stagehead"><h1>${esc(item.title)}</h1><span id="status"></span></div>
       <p>${esc(item.blurb || '')} <span class="muted">About ${fmtMin(item.minutes)}.</span></p></div>
     <div class="card lesson">
@@ -258,9 +266,10 @@ function viewItem(id) {
     mark(document.getElementById('p-ex'), p.parts?.ex);
   };
   const complete = (part) => (ok) => {
+    const was = done();
     setPart(item, part, !!ok, req);
     refresh();
-    if (ok && done()) toast('Lesson complete');
+    if (ok && !was && done()) toast('Lesson complete');
   };
 
   if (item.quiz) mountQuiz(document.getElementById('quiz'), item, complete('quiz'));
@@ -288,7 +297,7 @@ function viewReview() {
 // ------------------------------------------------------------------ mock exams
 function viewMocks() {
   const s = getState();
-  const main = shell('<div class="pagehead"><h1>Mock exams</h1><p>Timed practice under exam conditions, scored by skill area. Each full mock uses questions that are not in the lessons.</p></div><div id="mockhost"></div>', '#/mocks');
+  const main = shell('<div class="pagehead"><h1>Mock exams</h1><p>Timed practice under exam conditions, scored by skill area. Each full mock uses questions that are not in the lessons. They work best once you have finished the coding practice stage; an early attempt is a fine baseline, but expect a low score. The review sprint works at any time.</p></div><div id="mockhost"></div>', '#/mocks');
   mountMockList(document.getElementById('mockhost'), s.profile.role);
   return main;
 }
@@ -304,12 +313,12 @@ function viewReadiness() {
   const s = getState();
   const r = computeReadiness(s);
   const role = ROLES[r.role];
-  const status = !r.enoughData ? 'early' : r.overall >= 0.8 ? 'strong' : r.overall >= role.bar / 100 ? 'close' : 'building';
+  const status = !r.enoughData ? 'early' : r.overall >= Math.max(75, role.bar + 10) / 100 ? 'strong' : r.overall >= role.bar / 100 ? 'close' : 'building';
   const msg = {
     early: ['Not enough data yet', 'gray', 'Finish about 8 items and this page will start to mean something. Until then, just follow the Today page.'],
-    building: ['Still building', 'warn', `Your pass mark is ${role.bar}%. Practice scores run lower than you expect under time pressure, so aim for 75% or more here before you book the assessment.`],
-    close: ['Getting close', 'ok', `You are above the ${role.bar}% pass mark on this estimate, but not with a safe margin. Aim for 75% or more, and fix the weak spots below first.`],
-    strong: ['Looking strong', 'ok', 'Keep up the practice, and take the timed mock tests in Stage 7 to confirm it under exam conditions.'],
+    building: ['Still building', 'warn', `Your pass mark is ${role.bar}%. Practice scores run lower than you expect under time pressure, so aim for ${Math.max(75, role.bar + 10)}% or more here before you book the assessment.`],
+    close: ['Getting close', 'ok', `You are above the ${role.bar}% pass mark on this estimate, but not with a safe margin. Aim for ${Math.max(75, role.bar + 10)}% or more, and fix the weak spots below first.`],
+    strong: ['Looking strong', 'ok', 'Keep up the practice, and take the timed mock exams to confirm it under exam conditions.'],
   }[status];
   const f = r.focus;
   const main = shell(`
@@ -332,7 +341,7 @@ function viewReadiness() {
       return `<div class="card"><h2>Where the points are</h2>
         <p>Candidates who have taken the exam describe about <b>${total} points</b>. For ${esc(role.name)} you need about <b>${need}</b> (${role.bar}%).</p>
         <div class="scroll"><table class="res"><thead><tr><th>Section</th><th>Points</th><th>Your estimate</th></tr></thead><tbody>${r.sections.map((x) => `<tr><td>${esc(x.name)}</td><td>${x.weight}</td><td>about ${Math.round(x.weight * x.readiness)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${total}</b></td><td><b>about ${est}</b></td></tr></tbody></table></div>
-        <p class="small muted" style="margin-top:8px">${r.enoughData ? `On this estimate you are ${est >= need ? 'above' : 'below'} the ${need} points you need. ` : ''}Each of the ${big.length} big sections is worth about 29% on its own. Two of them plus a few small points reaches 60%, so get two sections fully reliable before you polish the third. The split is one candidate's account, not an official breakdown.</p></div>`;
+        <p class="small muted" style="margin-top:8px">${r.enoughData ? `On this estimate you are ${est >= need ? 'above' : 'below'} the ${need} points you need. ` : ''}Each of the ${big.length} big sections is worth about 29% on its own. ${role.bar <= 60 ? 'Two of them plus a few small points reaches 60%, so get two sections fully reliable before you polish the third.' : 'Two of them plus every small point is only about 70%, with no room for error, so plan to be solid in all three.'} The split is one candidate's account, not an official breakdown.</p></div>`;
     })()}
     <div class="card"><h2>By skill area</h2>
       <div class="secs">${r.sections.map((x) => `<div class="sec">
@@ -381,7 +390,7 @@ async function viewInternal() {
   else {
     const groups = {};
     res.rows.forEach((r) => (groups[r.stage || 'General'] ||= []).push(r));
-    body.innerHTML = Object.entries(groups).map(([g, rows]) => `<div class="card"><h2>${esc(g)}</h2><ul class="links">${rows.map((r) => `<li>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>` : `<b>${esc(r.title)}</b>`}<span class="use">${esc(r.summary || '')}</span></li>`).join('')}</ul></div>`).join('');
+    body.innerHTML = Object.entries(groups).map(([g, rows]) => `<div class="card"><h2>${esc(g)}</h2><ul class="links">${rows.map((r) => `<li>${/^https:\/\//i.test(r.url || '') ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>` : `<b>${esc(r.title)}</b>`}<span class="use">${esc(r.summary || '')}</span></li>`).join('')}</ul></div>`).join('');
   }
   return main;
 }
@@ -441,7 +450,7 @@ function viewSettings() {
         : user ? `<p>Signed in as <b>${esc(user.email)}</b>. Progress syncs automatically.</p><button class="btn" data-act="signout">Sign out</button>
           <h3>Password</h3><p class="muted small">Set a password so you can sign in on your phone or any device without waiting for an email. At least 8 characters.</p>
           <div class="row"><input type="password" id="newpw" autocomplete="new-password" placeholder="New password" style="max-width:260px;margin:0"><button class="btn" data-act="setpw">Save password</button></div><div id="pwMsg" style="margin-top:10px"></div>`
-          : signInCard('Sign in to sync your progress')}
+          : `<p class="muted small">Until you sign in, progress lives only in this browser. Some browsers (Safari on iPhone in particular) can clear a site's saved data after about a week without a visit.</p>${signInCard('Sign in to sync your progress')}`}
     </div>
     <div class="card"><h2>Backup</h2>
       <p class="muted">Download a copy of your progress, or restore one. Useful as a safety net.</p>
@@ -466,22 +475,25 @@ function viewSettings() {
   };
   document.getElementById('importFile').addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;
-    try { replaceState(JSON.parse(await f.text())); toast('Backup restored'); } catch { toast('That file could not be read'); }
+    try { restoreState(JSON.parse(await f.text())); toast('Backup restored and merged with this device'); } catch { toast('That file is not a Zero to Assessment backup'); }
   });
   main.querySelector('[data-act="reset"]').onclick = () => {
-    if (confirm('Erase all progress and your plan on this device? This cannot be undone.')) { resetAll(); location.hash = '#/setup'; }
+    const msg = getUser()
+      ? 'Erase all progress and your plan? Because you are signed in, the synced copy is erased too. If another device is open and signed in, erase there as well, or it will sync its copy back. This cannot be undone.'
+      : 'Erase all progress and your plan on this device? This cannot be undone.';
+    if (confirm(msg)) { resetAll(); location.hash = '#/setup'; }
   };
   return main;
 }
 
 // ------------------------------------------------------------------ router
-async function render() {
+async function render(soft = false) {
   stopMock();
   const route = location.hash.replace(/^#/, '') || '/';
   const [, a, b] = route.split('/');
   const s = getState();
-  if (!s.profile && a !== 'setup' && a !== 'settings' && a !== 'internal') { location.hash = '#/setup'; return; }
-  window.scrollTo(0, 0);
+  if (!s.profile && !['setup', 'settings', 'internal', 'reference'].includes(a)) { location.hash = '#/setup'; return; }
+  if (!soft) window.scrollTo(0, 0);
   if (a === 'setup') return viewSetup();
   if (a === 'today' || route === '/') return viewToday();
   if (a === 'roadmap') return viewRoadmap();
@@ -500,8 +512,10 @@ async function render() {
 // so learner code and answers are never wiped.
 function softRender() {
   if (location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/') || location.hash.startsWith('#/review')) return;
-  if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
-  render();
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+  const y = window.scrollY;
+  render(true);
+  window.scrollTo(0, y);
 }
 subscribe(softRender);
 
@@ -512,7 +526,7 @@ setInterval(() => {
 }, 10000);
 
 initMomentum();
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', () => render());
 render();
 initRemote().then(() => {
   if (linkError) { toast('That sign-in link expired or was already used. Send a new link and click it once.'); location.hash = '#/settings'; }

@@ -90,7 +90,7 @@ export function mountPython(host, item, onPass) {
   const st = { fails: 0, hintIdx: 0 };
   host.innerHTML = `
     ${exerciseShell(ex, item, ex.io ? ioSample(ex) : '')}
-    <textarea class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Python code">${esc(getNote(key) || ex.starter)}</textarea>
+    <textarea class="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" aria-label="Python code">${esc(getNote(key) || ex.starter)}</textarea>
     <div class="row" style="margin:12px 0">
       <button class="btn primary" data-act="run">Run and check</button>
       <button class="btn" data-act="hint">Hint (0/${ex.hints.length})</button>
@@ -123,7 +123,7 @@ export function mountPython(host, item, onPass) {
     try {
       await pythonReady();
       const res = ex.io
-        ? await runPython(ta.value, ex.tests.map((t) => ({ input: t.input, expected: t.output })), 6000, 'io')
+        ? await runPython(ta.value, ex.tests.map((t) => ({ input: t.input, expected: t.output })), undefined, 'io')
         : await runPython(ta.value, ex.tests.map((t) => ({ expr: t.expr, expected: t.expected })));
       status.textContent = '';
       renderPythonResult(res);
@@ -172,7 +172,7 @@ export function mountPython(host, item, onPass) {
 
   function renderPythonResult(res) {
     if (res.timeout) {
-      fbbox.innerHTML = feedback('bad', 'Your code ran for more than 6 seconds and was stopped.', ['This is usually an endless loop. For a `while` loop, check that something inside changes the condition.', 'For a `for` loop over a huge range, look for a simpler approach.', ...(ex.io ? ['If it works on small inputs but not here, it is probably too slow for the large hidden inputs (up to 100000 values). Look for a way to do one pass instead of re-checking every pair or every stretch.'] : [])]);
+      fbbox.innerHTML = feedback('bad', 'Your code took too long and was stopped.', ['This is usually an endless loop. For a `while` loop, check that something inside changes the condition.', 'For a `for` loop over a huge range, look for a simpler approach.', ...(ex.io ? ['If it works on small inputs but not here, it is probably too slow for the large hidden inputs (up to 100000 values). Look for a way to do one pass instead of re-checking every pair or every stretch.'] : [])]);
       return fail();
     }
     if (res.error) {
@@ -212,6 +212,29 @@ function trapTips(ex, sql) {
   return (ex.traps || []).filter((t) => (t.has && t.has.test(sql)) || (t.lacks && !t.lacks.test(sql))).slice(0, 3).map((t) => `Likely cause: ${t.say}`);
 }
 
+// The practice engine is SQLite, which accepts a few things the MySQL exam database rejects.
+const NOT_ALIAS = /^(where|group|order|limit|join|left|right|inner|full|cross|on|union|having|window|natural)$/i;
+function mysqlNotes(sql) {
+  const notes = [];
+  const opener = /\b(from|join)\s*\(/gi;
+  let m;
+  while ((m = opener.exec(sql))) {
+    let depth = 0, i = m.index + m[0].length - 1;
+    for (; i < sql.length; i++) {
+      if (sql[i] === '(') depth++;
+      else if (sql[i] === ')' && --depth === 0) break;
+    }
+    const next = sql.slice(i + 1).match(/^\s*([A-Za-z_]\w*)/);
+    if (!next || NOT_ALIAS.test(next[1])) {
+      notes.push('MySQL needs a name (alias) after every subquery in `FROM` or `JOIN`, such as `) t`. Without it the exam rejects the query with "Every derived table must have its own alias".');
+      break;
+    }
+  }
+  if (/'[^']*'\s*\|\||\|\|\s*'/.test(sql)) notes.push('In MySQL `||` means OR, not "join text". Use `CONCAT(a, b)` instead.');
+  if (/\bfull\s+(outer\s+)?join\b/i.test(sql)) notes.push('MySQL has no `FULL OUTER JOIN`. On the exam, combine a `LEFT JOIN` and a `RIGHT JOIN` with `UNION`.');
+  return notes;
+}
+
 export function mountSql(host, item, onPass) {
   const ex = item.exercise;
   const key = `code:${item.id}`;
@@ -221,7 +244,7 @@ export function mountSql(host, item, onPass) {
     <details class="schema"><summary>Tables in this practice set</summary>
       <ul>${DATASETS[ex.data || 'sales'].doc.map((t) => `<li><code>${t.table}</code> (${esc(t.cols)}): ${esc(t.note)}</li>`).join('')}</ul>
     </details>
-    <textarea class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query">${esc(getNote(key) || ex.starter)}</textarea>
+    <textarea class="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" aria-label="SQL query">${esc(getNote(key) || ex.starter)}</textarea>
     <div class="row" style="margin:12px 0">
       <button class="btn primary" data-act="run">Run and check</button>
       <button class="btn" data-act="hint">Hint (0/${ex.hints.length})</button>
@@ -284,11 +307,12 @@ export function mountSql(host, item, onPass) {
           resbox.innerHTML = `<h3>Your result</h3>${table(got)}`;
           const expected = await runQuery(ex.solution, ex.data);
           const cmp = compareSql(got, expected, { ordered: ex.ordered });
+          const my = mysqlNotes(sql);
           if (cmp.ok) {
-            fbbox.innerHTML = feedback('ok', 'Correct. Your result matches the expected answer.', ['Tip: write the same query again tomorrow without looking. Recall is what sticks.']);
+            fbbox.innerHTML = feedback('ok', 'Correct. Your result matches the expected answer.', [...my.map((n) => `Before the exam, fix one thing: ${n}`), 'Tip: write the same query again tomorrow without looking. Recall is what sticks.']);
             onPass(true);
           } else {
-            fbbox.innerHTML = feedback('bad', cmp.lead, [...trapTips(ex, sql), ...cmp.steps]);
+            fbbox.innerHTML = feedback('bad', cmp.lead, [...trapTips(ex, sql), ...my, ...cmp.steps]);
             fail();
           }
         }
@@ -322,7 +346,7 @@ export function mountPrompt(host, item, onPass) {
         <pre class="code">${esc(c.input)}</pre>
         <div class="row" style="margin-bottom:10px"><button class="btn" data-act="copy">Copy my prompt with this input</button></div>
         <label class="field" style="margin-bottom:8px">Paste the assistant's reply, exactly as given
-          <textarea rows="3" data-role="out" style="font-family:var(--mono)"></textarea>
+          <textarea rows="3" data-role="out" autocorrect="off" autocapitalize="off" spellcheck="false" style="font-family:var(--mono)"></textarea>
         </label>
         <button class="btn primary" data-act="check">Check</button>
         <div class="cfb"></div>

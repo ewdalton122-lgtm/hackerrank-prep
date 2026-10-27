@@ -39,13 +39,13 @@ export const prompts = [
     quiz: [
       {
         q: 'The expected output is `NEGATIVE`. The model replies `The sentiment is NEGATIVE.` Result?',
-        options: ['Pass: the right word is in there', 'Fail: extra words break an exact match', 'Partial credit', 'Pass if the model was confident'],
+        options: ['Pass: the label appears in the reply', 'Fail: extra words break an exact match', 'Partial credit, since the label itself is right', 'Pass, as long as the label is spelled correctly'],
         answer: 1,
         explain: [
           'Contains is not the same as equals. The check compares the whole reply.',
           'Correct. Add "Output only the label, nothing else" to the prompt.',
-          'Each test case is pass or fail.',
-          'Confidence is irrelevant to the comparison.',
+          'Each test case is pass or fail. There is no credit for being close.',
+          'The spelling is right, but the extra words still break the match.',
         ],
       },
       {
@@ -53,8 +53,8 @@ export const prompts = [
         options: [
           'Output ONLY the result, no explanation',
           'A short worked example copying the exact format',
-          'Please think step by step and explain your reasoning',
-          'If the input is empty, output NONE',
+          'Think step by step and explain your reasoning',
+          'If the input is empty, output exactly the word NONE',
         ],
         answer: 2,
         explain: [
@@ -66,13 +66,13 @@ export const prompts = [
       },
       {
         q: 'Your prompt fails a case. You re-run the identical prompt hoping for a different answer. What happens?',
-        options: ['The model tries harder', 'You usually get the same cached answer', 'You get a random new answer', 'The test case is skipped'],
+        options: ['The model tries harder on the second attempt', 'You usually get the same cached answer', 'You get a fresh, random answer from the model', 'The failed case is skipped on the second run'],
         answer: 1,
         explain: [
-          'There is no retry logic like that.',
+          'There is no retry logic like that. The same prompt is handled the same way.',
           'Correct. Change the prompt (even a small edit) to get a new response.',
           'Identical prompts are cached, so there is no new draw.',
-          'Failed cases are not skipped.',
+          'Failed cases are not skipped. Every case is checked on every run.',
         ],
       },
     ],
@@ -85,6 +85,7 @@ export const prompts = [
     blocks: [
       { t: 'p', text: 'How these drills work: write one prompt in the box, using `{input}` where the data goes. Use the buttons to copy the finished prompt for each case, run it in any AI assistant you like (Claude, ChatGPT, Agentforce), and paste the reply back. The site checks it **exactly**, the way an automated grader would, and tells you what is off.' },
       { t: 'tip', text: 'Test on at least two different assistants. A prompt that works on both is more robust against a grader model you cannot see.' },
+      { t: 'warn', text: 'In the real exam you will not use an outside AI. The question has a Run button that sends your prompt to the exam\'s own model and shows the output. Opening another assistant during a proctored test can be flagged. The outside assistant is only for practice here.' },
     ],
     exercise: {
       kind: 'prompt',
@@ -185,7 +186,7 @@ export const prompts = [
     ],
     exercise: {
       kind: 'prompt',
-      task: 'Each input is a record with fields name, email and phone. A field is missing if its value is blank. If nothing is missing output COMPLETE. Otherwise output MISSING: followed by the missing field names in alphabetical order, separated by commas with no spaces (for example MISSING: email,name).',
+      task: 'Each input is a record with fields name, email and phone. A field is missing if its value is blank. If nothing is missing output COMPLETE. Otherwise output MISSING: followed by the missing field names in alphabetical order, with one space after the colon and the names separated by commas with no spaces (for example MISSING: email,name).',
       cases: [
         { input: 'name: Ana Ruiz\nemail: \nphone: 555-0101', expected: 'MISSING: email' },
         { input: 'name: \nemail: \nphone: 555-0101', expected: 'MISSING: email,name' },

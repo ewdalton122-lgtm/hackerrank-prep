@@ -50,7 +50,7 @@ export const sqf = [
   mk('sqf-null', 'NULL and COALESCE', 45, 'Blank values break arithmetic unless you handle them.', 'staff', [
     { t: 'p', text: '`NULL` means **unknown or missing**. It is not zero and not an empty string. Any math with NULL gives NULL: `5 + NULL` is `NULL`.' },
     { t: 'code', text: 'SELECT name, commission\nFROM employees\nWHERE commission IS NULL;   -- never = NULL\n\nSELECT name, salary + COALESCE(commission, 0) AS total_pay\nFROM employees;' },
-    { t: 'analogy', text: 'An empty cell in Excel behaves like zero in a SUM but breaks a formula that points at it. `COALESCE(x, 0)` says "use x, but if it is blank, use 0 instead".' },
+    { t: 'analogy', text: 'Think of `NULL` as "unknown", not zero. Any arithmetic with it is unknown too (`5 + NULL` is `NULL`), and aggregates simply skip it: `AVG` divides only by the rows that have a value. `COALESCE(x, 0)` says "use x, but if it is blank, use 0 instead".' },
     { t: 'tip', text: '`COALESCE` takes the first value that is not NULL. MySQL also has `IFNULL(x, 0)`, which does the same for two values.' },
   ], {
     prompt: "For employees whose `title` ends in **Manager**, return `name` and their total pay as `total_pay` (salary plus commission, counting a missing commission as 0). Highest total pay first.",
@@ -75,7 +75,7 @@ export const sqf = [
   mk('sqf-strings', 'Text functions: LENGTH, UPPER, SUBSTR', 40, 'Measure and reshape text.', 'stations', [
     { t: 'p', text: 'Text functions work on one value per row.' },
     { t: 'list', items: [
-      '`LENGTH(city)` counts characters.',
+      '`LENGTH(city)` counts characters. (Strictly, MySQL\'s `LENGTH` counts bytes, which is the same for plain English letters. `CHAR_LENGTH` always counts characters.)',
       '`UPPER(city)` and `LOWER(city)` change case.',
       '`SUBSTR(city, 1, 3)` takes 3 characters starting at position **1** (positions start at 1, not 0).',
       '`CONCAT(a, \'-\', b)` joins text. MySQL has it, and it works in this practice database too.',
@@ -93,7 +93,7 @@ export const sqf = [
     { t: 'p', text: 'Reports often need one text column built from several. `CONCAT` glues pieces together in the order you give them.' },
     { t: 'code', text: "SELECT CONCAT(city, ', ', state) AS place\nFROM stations;" },
     { t: 'warn', text: 'If any piece is `NULL`, the whole `CONCAT` result is `NULL` in MySQL. Wrap possibly-blank columns in `COALESCE`.' },
-    { t: 'tip', text: 'SQLite (used for some other tools) joins text with `||` instead: `city || \', \' || state`.' },
+    { t: 'warn', text: 'Do not join text with `||` on the exam. In MySQL `||` means OR, so `city || \', \' || state` returns 0 or 1 instead of text. Use `CONCAT`.' },
   ], {
     prompt: "For stations whose `city` starts with **P**, return one column `tag`: the city in lower case, a dash, then the state in lower case (like `portland-or`). Sort by `tag`.",
     starter: 'SELECT \nFROM stations\n',
@@ -104,7 +104,7 @@ export const sqf = [
   mk('sqf-math', 'Arithmetic and ROUND', 40, 'Spread, averages and rounding.', 'stations', [
     { t: 'p', text: 'SQL does math on columns row by row, and aggregates like `MAX`, `MIN`, `AVG`, `SUM` combine rows. You can mix them: `MAX(x) - MIN(x)`.' },
     { t: 'code', text: 'SELECT ROUND(AVG(lat_n), 2) AS avg_lat,\n       ROUND(MAX(lat_n) - MIN(lat_n), 4) AS spread\nFROM stations;' },
-    { t: 'p', text: '`ROUND(x, 2)` rounds to 2 decimal places. `ROUND(x, 0)` rounds to a whole number.' },
+    { t: 'p', text: '`ROUND(x, 2)` rounds to 2 decimal places. `ROUND(x, 0)` rounds to a whole number. `TRUNCATE(x, 2)` cuts off after 2 decimals without rounding: `TRUNCATE(2.999, 2)` is `2.99`, while `ROUND(2.999, 2)` is `3.00`. When a question says **truncate**, use `TRUNCATE`; when it says **round**, use `ROUND`.' },
     { t: 'warn', text: 'Division trap: in this practice database `7 / 2` is `3` (whole-number division), while MySQL gives `3.5`. To be safe, make one side a decimal: `7 * 1.0 / 2`.' },
   ], {
     prompt: 'In one row, return the **range** of the `long_w` column (largest minus smallest) rounded to **4 decimal places**, named `spread`.',
@@ -219,9 +219,9 @@ export const sqf = [
   }, [
     {
       q: 'Why is NOT IN (SELECT some_column ...) risky?',
-      options: ['It is always slow', 'If the subquery returns any NULL, the test matches no rows', 'It cannot use two tables', 'It sorts the result differently'],
+      options: ['It runs the subquery once per row, so it is too slow', 'One NULL in the subquery makes it match no rows', 'It only works when both tables have the same columns', 'It removes duplicates, so some rows go missing'],
       answer: 1,
-      explain: ['Speed is not the problem here.', 'Correct. "Not equal to unknown" is unknown, so one NULL makes every row fail the test.', 'It works across tables fine.', 'It has nothing to do with sorting.'],
+      explain: ['Speed is not the problem here. Wrong results are.', 'Correct. "Not equal to unknown" is unknown, so one NULL makes every row fail the test.', 'The subquery only needs to return one column. The tables can differ.', 'Duplicates do not change an IN test. The NULL is the trap.'],
     },
   ]),
 ];
@@ -230,20 +230,20 @@ export const sqf = [
 export const sqa = [
   mk('sqa-topn', 'Top N per group with ROW_NUMBER', 55, 'The most asked advanced question.', 'staff', [
     { t: 'p', text: '`ROW_NUMBER() OVER (PARTITION BY group ORDER BY sort)` numbers rows 1, 2, 3 **inside each group**. Then you keep the rows numbered 1 and 2.' },
-    { t: 'code', text: 'SELECT *\nFROM (\n  SELECT dept_id, name, salary,\n         ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC, name) AS rn\n  FROM employees\n)\nWHERE rn <= 2;' },
+    { t: 'code', text: 'SELECT *\nFROM (\n  SELECT dept_id, name, salary,\n         ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC, name) AS rn\n  FROM employees\n) t\nWHERE rn <= 2;' },
     { t: 'warn', text: 'You cannot filter on a window function in the same `SELECT`. Wrap the query and filter outside, as above (or use a `WITH` block).' },
     { t: 'tip', text: '`ROW_NUMBER` gives each row a unique number. `RANK` and `DENSE_RANK` give ties the **same** number, so they can return more rows than N.' },
   ], {
     prompt: 'Return the **2 highest paid** employees in each department: `dept_id`, `name`, `salary`. Ties on salary go to the name that comes first alphabetically. Order by `dept_id`, then salary highest first, then name.',
-    starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         ROW_NUMBER() OVER (PARTITION BY ) AS rn\n  FROM employees\n)\n',
-    solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC, name) AS rn FROM employees) WHERE rn <= 2 ORDER BY dept_id, salary DESC, name;',
+    starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         ROW_NUMBER() OVER (PARTITION BY ) AS rn\n  FROM employees\n) t\n',
+    solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC, name) AS rn FROM employees) t WHERE rn <= 2 ORDER BY dept_id, salary DESC, name;',
     hints: ['Fill the window: `PARTITION BY dept_id ORDER BY salary DESC, name`.', 'Outside the parentheses add `WHERE rn <= 2`.', 'Finish with `ORDER BY dept_id, salary DESC, name`.'],
   }, [
     {
       q: 'Department 4 has two analysts tied on salary. If you used RANK() instead of ROW_NUMBER() to keep rank <= 2, what could happen?',
-      options: ['Nothing, the result is identical', 'Tied people share a rank, so you can get more than 2 rows for that department', 'The query fails', 'Both tied people are dropped'],
+      options: ['Nothing: RANK and ROW_NUMBER give the same numbers', 'Ties share a rank, so you can get more than 2 rows', 'The query fails, because RANK cannot be filtered', 'Both tied people are dropped from the result'],
       answer: 1,
-      explain: ['Ties are exactly where they differ.', 'Correct. RANK gives tied rows the same number, so more than N rows can pass the filter.', 'It runs fine.', 'Ties are kept, not dropped.'],
+      explain: ['Ties are exactly where they differ.', 'Correct. RANK gives tied rows the same number, so more than N rows can pass the filter.', 'You filter RANK in the outer query just like ROW_NUMBER, and it runs fine.', 'Ties are kept, not dropped. They share the same rank.'],
     },
   ]),
 
@@ -261,13 +261,13 @@ export const sqa = [
 
   mk('sqa-share', 'Share of total with SUM() OVER ()', 50, 'A percent of the grand total next to each row.', 'shop', [
     { t: 'p', text: 'A window function with an **empty** `OVER ()` looks at the whole result. `SUM(revenue) OVER ()` is the grand total, repeated on every row, so you can divide by it without a second query.' },
-    { t: 'code', text: 'SELECT category, revenue,\n       ROUND(100.0 * revenue / SUM(revenue) OVER (), 1) AS pct\nFROM ( ... one row per category ... );' },
+    { t: 'code', text: 'SELECT category, revenue,\n       ROUND(100.0 * revenue / SUM(revenue) OVER (), 1) AS pct\nFROM ( ... one row per category ... ) t;' },
     { t: 'tip', text: 'Multiply by `100.0` (with the decimal) so the division gives a decimal, not a whole number.' },
     { t: 'analogy', text: 'Every row gets the SUM at the bottom of the column, so each row can compute its own "% of total".' },
   ], {
     prompt: 'For **Shipped** orders, return each product `category`, its `revenue`, and `pct`: that category\'s share of all revenue as a percent rounded to **1 decimal**. Highest revenue first.',
-    starter: "SELECT category, revenue\nFROM (\n  SELECT p.category, SUM(i.qty * p.price) AS revenue\n  FROM orders o\n  JOIN order_items i ON i.order_id = o.id\n  JOIN products p ON p.id = i.product_id\n  WHERE o.status = 'Shipped'\n  GROUP BY p.category\n)\n",
-    solution: "SELECT category, revenue, ROUND(100.0 * revenue / SUM(revenue) OVER (), 1) AS pct FROM (SELECT p.category, SUM(i.qty * p.price) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'Shipped' GROUP BY p.category) ORDER BY revenue DESC;",
+    starter: "SELECT category, revenue\nFROM (\n  SELECT p.category, SUM(i.qty * p.price) AS revenue\n  FROM orders o\n  JOIN order_items i ON i.order_id = o.id\n  JOIN products p ON p.id = i.product_id\n  WHERE o.status = 'Shipped'\n  GROUP BY p.category\n) t\n",
+    solution: "SELECT category, revenue, ROUND(100.0 * revenue / SUM(revenue) OVER (), 1) AS pct FROM (SELECT p.category, SUM(i.qty * p.price) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'Shipped' GROUP BY p.category) t ORDER BY revenue DESC;",
     hints: ['The inner query already gives one row per category.', 'Add `ROUND(100.0 * revenue / SUM(revenue) OVER (), 1) AS pct` to the outer SELECT.', 'Finish with `ORDER BY revenue DESC`.'],
   }),
 
@@ -277,7 +277,7 @@ export const sqa = [
     { t: 'analogy', text: 'Each `SUM(CASE ...)` is a `COUNTIFS` for one column of your pivot table.' },
     { t: 'tip', text: '`YEAR(hire_date)` returns the year of a date, a MySQL function that works in this practice database.' },
   ], {
-    prompt: 'For each department, return the department `name` (from the `departments` table), `before_2020` (employees hired before 2020) and `since_2020` (hired in 2020 or later). Departments with no employees can be left out. Order by department name.',
+    prompt: 'For each department, return the department `name` (from the `departments` table), `before_2020` (employees hired before 2020) and `since_2020` (hired in 2020 or later). Leave out departments with no employees. Order by department name.',
     starter: 'SELECT d.name,\nFROM departments d\nJOIN employees e ON e.dept_id = d.id\n',
     solution: 'SELECT d.name, SUM(CASE WHEN YEAR(e.hire_date) < 2020 THEN 1 ELSE 0 END) AS before_2020, SUM(CASE WHEN YEAR(e.hire_date) >= 2020 THEN 1 ELSE 0 END) AS since_2020 FROM departments d JOIN employees e ON e.dept_id = d.id GROUP BY d.name ORDER BY d.name;',
     hints: ['Write one `SUM(CASE WHEN YEAR(e.hire_date) < 2020 THEN 1 ELSE 0 END) AS before_2020`.', 'Write the second with `>= 2020` and name it `since_2020`.', 'Add `GROUP BY d.name` and `ORDER BY d.name`.'],
@@ -313,8 +313,8 @@ export const sqa = [
     { t: 'p', text: 'Wrap it and filter outside: `WHERE salary > dept_avg`. The older way is a **correlated subquery**, a subquery that mentions the outer row: `salary > (SELECT AVG(salary) FROM employees e2 WHERE e2.dept_id = e.dept_id)`. Both are fine.' },
   ], {
     prompt: 'Return `dept_id`, `name` and `salary` for employees who earn **more than the average salary of their own department**. Order by `dept_id`, then salary highest first, then name.',
-    starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         AVG(salary) OVER (PARTITION BY dept_id) AS dept_avg\n  FROM employees\n)\n',
-    solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, AVG(salary) OVER (PARTITION BY dept_id) AS dept_avg FROM employees) WHERE salary > dept_avg ORDER BY dept_id, salary DESC, name;',
+    starter: 'SELECT dept_id, name, salary\nFROM (\n  SELECT dept_id, name, salary,\n         AVG(salary) OVER (PARTITION BY dept_id) AS dept_avg\n  FROM employees\n) t\n',
+    solution: 'SELECT dept_id, name, salary FROM (SELECT dept_id, name, salary, AVG(salary) OVER (PARTITION BY dept_id) AS dept_avg FROM employees) t WHERE salary > dept_avg ORDER BY dept_id, salary DESC, name;',
     hints: ['The inner query already adds `dept_avg` to every row.', 'Filter outside with `WHERE salary > dept_avg`.', 'Finish with `ORDER BY dept_id, salary DESC, name`.'],
   }),
 
@@ -322,11 +322,16 @@ export const sqa = [
     { t: 'p', text: 'A leaderboard is three steps: **total** each customer (GROUP BY), **drop** the ones that do not qualify (HAVING), then **rank** the totals (window function). A window function can rank grouped results in the same query because it runs after the grouping.' },
     { t: 'code', text: 'SELECT DENSE_RANK() OVER (ORDER BY SUM(x) DESC) AS place,\n       name, SUM(x) AS total\nFROM ...\nGROUP BY name;' },
     { t: 'tip', text: '`DENSE_RANK` gives tied rows the same place and does not skip numbers: 1, 2, 2, 3. `RANK` would give 1, 2, 2, 4.' },
+    { t: 'warn', text: 'Joining `order_items` repeats each order once per item line. To count **orders**, use `COUNT(DISTINCT o.id)`; `COUNT(*)` would count item lines.' },
   ], {
     prompt: 'Rank customers with **at least 2 Shipped orders** by lifetime Shipped revenue (qty times price). Return `place` (DENSE_RANK, highest revenue = 1), `name` and `revenue`. Order by `place`, then name.',
     starter: "SELECT DENSE_RANK() OVER (ORDER BY ) AS place,\n       c.name,\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nJOIN order_items i ON i.order_id = o.id\nJOIN products p ON p.id = i.product_id\nWHERE o.status = 'Shipped'\n",
     solution: "SELECT DENSE_RANK() OVER (ORDER BY SUM(i.qty * p.price) DESC) AS place, c.name, SUM(i.qty * p.price) AS revenue FROM orders o JOIN customers c ON c.id = o.customer_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'Shipped' GROUP BY c.id, c.name HAVING COUNT(DISTINCT o.id) >= 2 ORDER BY place, c.name;",
     hints: ['Fill the window with `ORDER BY SUM(i.qty * p.price) DESC` and add `SUM(i.qty * p.price) AS revenue`.', 'Add `GROUP BY c.id, c.name` and `HAVING COUNT(DISTINCT o.id) >= 2`.', 'Finish with `ORDER BY place, c.name`.'],
+    traps: [
+      { has: /HAVING\s+COUNT\(\s*(\*|o\.id|i\.\w+)\s*\)/i, say: 'after joining `order_items`, each order appears once per item line, so that count is items, not orders. Use `COUNT(DISTINCT o.id)`.' },
+      { has: /\bRANK\s*\(/i, say: '`RANK` skips numbers after a tie (1, 2, 2, 4). The task asks for `DENSE_RANK` (1, 2, 2, 3).' },
+    ],
   }),
 
   mk('sqa-friends', 'Exam-level join: best friends and salaries', 65, 'Join the same table twice to compare two people.', 'school', [

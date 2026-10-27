@@ -42,7 +42,7 @@ export const sql = [
       { t: 'p', text: 'A **table** is a sheet: rows are records, columns are fields. A query reads from a table and returns a new, smaller table.' },
       { t: 'code', text: 'SELECT name, industry\nFROM accounts\nWHERE region = \'East\'\nORDER BY name;' },
       { t: 'list', items: [
-        '`SELECT` picks the columns. `SELECT *` means all of them.',
+        '`SELECT` picks the columns. `SELECT *` means all of them. `AS` renames a column in the result: `SELECT amount AS deal_size`.',
         '`FROM` names the table.',
         '`WHERE` keeps only rows that match. Text goes in **single quotes**.',
         '`ORDER BY` sorts. Add `DESC` for largest-first.',
@@ -129,7 +129,7 @@ export const sql = [
       { t: 'p', text: '**Aggregates** collapse many rows into one number: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`. `GROUP BY` does it once per group.' },
       { t: 'code', text: 'SELECT stage, SUM(amount) AS total\nFROM deals\nGROUP BY stage;' },
       { t: 'analogy', text: '`GROUP BY` is a **pivot table**: rows = the group, values = SUM or COUNT. `AS total` just names the column.' },
-      { t: 'warn', text: 'Rule: every column in `SELECT` is either in the `GROUP BY` or wrapped in an aggregate. That rule explains most GROUP BY errors.' },
+      { t: 'warn', text: 'Rule: every column in `SELECT` is either in the `GROUP BY` or wrapped in an aggregate. That rule explains most GROUP BY errors. The practice database here is forgiving and may run a query that breaks it, but the exam\'s MySQL usually refuses, so follow the rule every time.' },
     ],
     quiz: [
       {
@@ -245,6 +245,7 @@ export const sql = [
       { t: 'p', text: 'A plain `JOIN` drops rows with no match. A `LEFT JOIN` keeps every row from the **left** table and fills the right side with `NULL` when nothing matches.' },
       { t: 'code', text: 'SELECT a.name\nFROM accounts a\nLEFT JOIN deals d ON d.account_id = a.id\nWHERE d.id IS NULL;' },
       { t: 'analogy', text: 'A `LEFT JOIN` keeps every row of the left sheet even when the lookup returns `#N/A`. Filtering on `IS NULL` finds exactly those misses.' },
+      { t: 'warn', text: 'A condition on the **right-hand** table belongs in `ON`, not `WHERE`. `WHERE d.stage = \'Closed Won\'` throws away the `NULL` rows the `LEFT JOIN` just kept, so it quietly becomes a plain `JOIN`. (`WHERE d.id IS NULL` is the one exception: it is how you ask for the misses.)' },
     ],
     quiz: [
       {
@@ -266,7 +267,7 @@ export const sql = [
     ],
     exercise: {
       kind: 'sql',
-      prompt: 'Return the **names** of accounts that have **no deals**, alphabetically.',
+      prompt: 'Return the **names** of accounts that have **no deals**. Sort them A to Z.',
       starter: 'SELECT a.name\nFROM accounts a\n',
       solution: 'SELECT a.name FROM accounts a LEFT JOIN deals d ON d.account_id = a.id WHERE d.id IS NULL ORDER BY a.name;',
       ordered: true,
@@ -290,10 +291,9 @@ export const sql = [
   },
   {
     id: 'sql-r-hr1',
-    optional: true,
-    title: 'Practice: HackerRank Weather Station series (recommended)',
-    minutes: 300,
-    blurb: 'A candidate who took the exam recommends the Weather Station series (1 to 18) for SQL practice. Same editor and grader style as the real thing.',
+    title: 'Practice on HackerRank itself: the Weather Station series',
+    minutes: 240,
+    blurb: 'A candidate who took the exam recommends Weather Observation Station 1 to 18. This is the real HackerRank editor running real MySQL, so it also catches anything the practice database here forgives, such as a missing subquery alias. Stations 13 to 18 use ROUND and TRUNCATE.',
     links: [
       { label: 'HackerRank SQL domain', url: 'https://www.hackerrank.com/domains/sql', use: 'Choose MySQL in the language dropdown.' },
       { label: 'Select All', url: 'https://www.hackerrank.com/challenges/select-all-sql/problem', use: 'Warm-up' },
@@ -355,13 +355,13 @@ export const sqlAdv = [
       },
       {
         q: 'What does PARTITION BY do inside OVER?',
-        options: ['Deletes duplicates', 'Restarts the calculation for each group', 'Sorts the final output', 'Joins two tables'],
+        options: ['Removes duplicate rows within each group', 'Restarts the calculation for each group', 'Sorts the final output by that column', 'Collapses each group into one row'],
         answer: 1,
         explain: [
-          'That is DISTINCT.',
+          'Removing duplicates is DISTINCT, not PARTITION BY.',
           'Correct. Each partition is calculated separately, like one list per group.',
           'Sorting the final output is done by the outer ORDER BY.',
-          'Joins are separate.',
+          'That is GROUP BY. A window function keeps every row.',
         ],
       },
     ],
@@ -387,6 +387,7 @@ export const sqlAdv = [
       { t: 'p', text: 'Put an aggregate inside `OVER (ORDER BY ...)` and it becomes a **running total**: each row shows the sum of everything up to that row.' },
       { t: 'code', text: 'SELECT close_date, amount,\n       SUM(amount) OVER (ORDER BY close_date) AS running_total\nFROM deals\nWHERE stage = \'Closed Won\'\nORDER BY close_date;' },
       { t: 'analogy', text: 'This is the running-balance column in a ledger: `=SUM($B$2:B2)` dragged down.' },
+      { t: 'warn', text: 'Ties: if two rows share the same `close_date`, the default frame treats them as one step, so both rows show the same total (which already includes both). To add one row at a time, give the sort a tie-breaker (`ORDER BY close_date, id`) or write the frame `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.' },
       { t: 'tip', text: '`LAG(amount)` looks at the previous row and `LEAD(amount)` the next one. They are the "prior period" in a month-over-month variance.' },
     ],
     quiz: [
@@ -422,7 +423,7 @@ export const sqlAdv = [
     blurb: 'Group and filter by month the way MySQL does it.',
     blocks: [
       { t: 'p', text: 'Date questions usually ask you to group by month or year, or find the gap between two dates. MySQL gives you simple functions for this:' },
-      { t: 'code', text: "YEAR(close_date)                # 2026\nMONTH(close_date)               # 3\nDATEDIFF('2026-03-18','2026-03-01')   # 17 days\nDATE_FORMAT(close_date, '%Y-%m')      # '2026-03'" },
+      { t: 'code', text: "YEAR(close_date)                      -- 2026\nMONTH(close_date)                     -- 3\nDATEDIFF('2026-03-18','2026-03-01')   -- 17 days\nDATE_FORMAT(close_date, '%Y-%m')      -- '2026-03'" },
       { t: 'p', text: 'The practice box below has these four functions built in so you can drill the MySQL spelling.' },
       { t: 'warn', text: 'Other databases spell dates differently (SQL Server uses `DATEPART`, SQLite uses `strftime`). In an assessment, check which database you selected in the dropdown and use that one\'s functions.' },
     ],

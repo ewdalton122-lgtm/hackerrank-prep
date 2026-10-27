@@ -7,7 +7,7 @@ const d = (id, title, minutes, blurb, text, ex) => ({
 
 export const promptMore = [
   d('pe-count', 'Drill 7: count carefully', 45, 'Language models are weak at counting. Make the steps explicit.',
-    'Counting and arithmetic are where models slip. Tell the model to list the qualifying items first, then give the count. Still print **only** the final number.', {
+    'Counting and arithmetic are where models slip. State the rule precisely, give one worked example, and tell the model to check each item silently. It must still print **only** the final number, because anything else it writes is graded.', {
       task: 'Count how many words in the text have **more than 5 letters**. Output only the number.',
       cases: [
         { input: 'The quick brown foxes jumped over lazy dogs', expected: '1' },
@@ -15,7 +15,7 @@ export const promptMore = [
         { input: 'a b c', expected: '0' },
       ],
       hints: [
-        'Ask the model to first write down each word with its letter count, then count the ones above 5.',
+        'Tell the model to check each word\'s letter count silently, one by one, before answering.',
         'But the output must be only the number. Say: "Do your thinking silently. Output only the final number."',
         'Add the rule "5 letters is NOT more than 5" and one worked example.',
       ],

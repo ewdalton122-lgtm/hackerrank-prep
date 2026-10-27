@@ -1,19 +1,18 @@
 // Stage 5 extra: more written stakeholder replies. Each has a self-check list and one model reply.
 // Same five-part shape as the first two: goal, fact, options, recommendation, next step.
+import { RB } from './rubric.js';
 const w = (id, title, blurb, prompt, rubric, model, extra = []) => ({
   id, title, minutes: 45, blurb,
   blocks: [
     { t: 'p', text: 'Use the same five-part shape: **acknowledge the goal**, **state the key fact** neutrally, **offer two options**, **recommend one**, **close with a next step**.' },
     ...extra,
   ],
-  exercise: { kind: 'written', prompt, minWords: 60, rubric, model },
+  exercise: { kind: 'written', prompt, minWords: 60, rubric: [...rubric, RB.noBlame], model },
 });
 
 const goal = (re) => ({ id: 'goal', label: 'Acknowledges the stakeholder\'s goal or concern first', test: re });
 const fact = (label, re) => ({ id: 'fact', label, test: re });
-const options = { id: 'options', label: 'Offers at least two options', test: /option|alternatively|either|instead|versus|or we|two ways|two paths|choice/i };
-const rec = { id: 'rec', label: 'Recommends one option and says why', test: /recommend|suggest|propose|prefer|i['’]d (start|go|choose|pick)|best (path|choice|option)/i };
-const next = { id: 'next', label: 'Ends with a concrete next step, owner or date', test: /next step|this week|by (mon|tue|wed|thu|fri)|tomorrow|schedule|call|session|follow up|confirm/i };
+const { options, rec, next } = RB;
 
 export const writtenMore = [
   w('sk-scope', 'Written response: an extra request mid-project',

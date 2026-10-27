@@ -3,7 +3,7 @@ export const REFERENCE = [
   {
     id: 'ref-io', title: 'Python: reading input on HackerRank',
     blocks: [
-      { t: 'p', text: 'On HackerRank the program usually **reads from input** and **prints** the answer. (The practice problems on this site use functions instead, but the exam page will look like this.)' },
+      { t: 'p', text: 'On HackerRank the program usually **reads from input** and **prints** the answer. The coding practice on this site works the same way. Some HackerRank problems instead give you a function to fill in: then **return** the answer and let the template print it.' },
       { t: 'code', text: 'n = int(input())                          # one number\nnums = list(map(int, input().split()))   # "3 5 8" -> [3, 5, 8]\nname = input().strip()                    # one line of text\n\nfor _ in range(n):                        # n more lines\n    line = input()\n\nprint(total)                              # output\nprint(a, b)                               # prints "a b" with a space\nprint("\\n".join(rows))                    # one row per line' },
       { t: 'tip', text: 'Many HackerRank problems give you a function stub to complete and call it for you. Read the template before you type anything.' },
     ],
@@ -25,7 +25,7 @@ export const REFERENCE = [
       { t: 'code', text: '# running total\ntotal = 0\nfor x in nums:\n    total += x\n\n# track the biggest\nbest = nums[0]\nfor x in nums:\n    if x > best:\n        best = x\n\n# binary search (list must be sorted)\nlow, high = 0, len(nums) - 1\nwhile low <= high:\n    mid = (low + high) // 2\n    if nums[mid] == target: return mid\n    elif nums[mid] < target: low = mid + 1\n    else: high = mid - 1\nreturn -1' },
       { t: 'list', items: [
         '**Read the constraints.** n up to 1,000 allows a double loop. n up to 100,000 needs a sort, a dictionary or binary search.',
-        '**Submit the simple version first**, then improve. Each hidden test case scores on its own.',
+        '**Submit the simple version first**, then improve. Partial passes reportedly earn very little, so keep going until every case passes, and keep a copy of your best passing code.',
         '**Test the edges:** empty input, one item, duplicates, zero, negatives.',
         '**Return vs print:** follow the problem statement exactly.',
       ] },
@@ -34,7 +34,7 @@ export const REFERENCE = [
   {
     id: 'ref-sql', title: 'SQL: the essentials',
     blocks: [
-      { t: 'p', text: 'SQL **runs** in this order: `FROM`, `WHERE`, `GROUP BY`, `HAVING`, `SELECT`, `ORDER BY`, `LIMIT`. You write them in that same order.' },
+      { t: 'p', text: 'You **write** a query as `SELECT`, `FROM`, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`. SQL **runs** it as `FROM`, `WHERE`, `GROUP BY`, `HAVING`, `SELECT`, `ORDER BY`, `LIMIT`, which is why `WHERE` cannot use a column alias or an aggregate.' },
       { t: 'code', text: "SELECT region, SUM(amount) AS total\nFROM deals d\nJOIN accounts a ON a.id = d.account_id          -- only matches\nLEFT JOIN reps r ON r.id = d.rep_id              -- keeps every deal\nWHERE stage = 'Closed Won' AND amount >= 50000   -- filters rows\nGROUP BY region                                  -- one row per region\nHAVING SUM(amount) > 100000                      -- filters groups\nORDER BY total DESC\nLIMIT 5;" },
       { t: 'h', text: 'Handy pieces' },
       { t: 'code', text: "COUNT(*), COUNT(DISTINCT col), SUM(), AVG(), MIN(), MAX()\nCASE WHEN amount >= 50000 THEN 'Large' ELSE 'Small' END\ncol IS NULL / col IS NOT NULL          -- never = NULL\nCOALESCE(col, 0)                       -- replace NULL\ncol IN ('a','b'), BETWEEN 1 AND 5, LIKE 'A%'\nSELECT DISTINCT col FROM t\n\n-- find rows with NO match\nSELECT a.name FROM accounts a\nLEFT JOIN deals d ON d.account_id = a.id\nWHERE d.id IS NULL;" },
@@ -51,8 +51,8 @@ export const REFERENCE = [
       { t: 'list', items: [
         '**Show one worked example.** Models copy the format of an example faithfully.',
         '**Say what to do for empty or odd input.** Hidden cases love edges.',
-        '**Counting and arithmetic:** ask the model to list the matching items first, then give the number.',
-        '**Test on more than one assistant** and more than one input before you trust it.',
+        '**Counting and arithmetic:** state the rule precisely (5 letters is NOT more than 5) and give one worked example. Never ask the model to show its working: everything it writes is graded.',
+        '**Test on more than one input** before you trust it. In the exam, Run sends your prompt to the exam\'s own AI model; there is no outside assistant.',
       ] },
     ],
   },
@@ -62,8 +62,9 @@ export const REFERENCE = [
       { t: 'list', items: [
         '**First 5 minutes:** skim all questions. Start with the one you are surest of.',
         '**Bank points early:** submit a working simple solution, then improve.',
-        '**Do not stall.** If you are stuck for 10 minutes, move on and come back.',
+        '**Do not stall.** If you are stuck for 10 minutes, submit what you have and move on. Check at the start whether you can go back to earlier questions.',
         '**Check outputs against the sample** before you submit: spacing, case and blank lines.',
+        '**If time runs out**, the last version you ran is submitted for you, and code you never ran is not graded. After every change, run it before you move on.',
         '**Setup:** quiet room, one monitor, charged laptop, a stable connection, webcam allowed. Rules vary, so confirm them in your invitation email.',
       ] },
     ],

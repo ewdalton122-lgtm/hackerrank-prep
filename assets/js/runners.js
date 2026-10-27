@@ -18,13 +18,18 @@ function startWorker() {
     };
     worker.onerror = (e) => reject(new Error(e.message || 'Worker failed to load'));
   });
-  readyP.catch(() => {});
+  // If Python fails to load (for example a dropped connection), forget the worker so the next run retries.
+  readyP.catch(() => { worker?.terminate(); worker = null; });
 }
+
+// Phones replace straight quotes with curly ones as you type, which breaks code.
+export const straightQuotes = (s) => String(s).replace(/[\u201C\u201D\u201E\u2033]/g, '"').replace(/[\u2018\u2019\u201A\u2032]/g, "'");
 
 export const pythonReady = () => { if (!worker) startWorker(); return readyP; };
 
-export async function runPython(code, tests, timeoutMs = 6000, mode = 'fn') {
+export async function runPython(code, tests, timeoutMs = 4000 + 1500 * tests.length, mode = 'fn') {
   await pythonReady();
+  code = straightQuotes(code);
   return new Promise((resolve) => {
     const id = ++seq;
     const timer = setTimeout(() => {
@@ -63,6 +68,12 @@ export function addMysqlFunctions(db) {
   db.create_function('CEIL', (x) => (x == null ? null : Math.ceil(x)));
   db.create_function('CEILING', (x) => (x == null ? null : Math.ceil(x)));
   db.create_function('FLOOR', (x) => (x == null ? null : Math.floor(x)));
+  db.create_function('TRUNCATE', (x, d) => {
+    if (x == null || d == null) return null;
+    const f = 10 ** d;
+    return Math.trunc(Number((x * f).toPrecision(15))) / f;
+  });
+  db.create_function('CHAR_LENGTH', (s) => (s == null ? null : [...String(s)].length));
   db.create_function('REGEXP', (pattern, s) => {
     if (pattern == null || s == null) return null;
     try { return new RegExp(pattern, 'i').test(String(s)) ? 1 : 0; } catch { return 0; }
@@ -81,6 +92,7 @@ export function loadSql() {
       if (!window.initSqlJs) await loadScript(SQLJS + 'sql-wasm.js');
       return window.initSqlJs({ locateFile: (f) => SQLJS + f });
     })();
+    sqlP.catch(() => { sqlP = null; });
   }
   return sqlP;
 }
@@ -93,7 +105,7 @@ export async function runQuery(sql, data = 'sales') {
   try {
     db.exec(DATASETS[data].sql);
     addMysqlFunctions(db);
-    const res = db.exec(sql);
+    const res = db.exec(straightQuotes(sql));
     return res.length ? res[res.length - 1] : { columns: [], values: [] };
   } finally {
     db.close();

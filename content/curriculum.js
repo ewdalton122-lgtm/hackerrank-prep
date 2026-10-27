@@ -32,6 +32,7 @@ const codingStrategy = {
       '**Write the simplest correct version and submit it.** It is your fallback, even if it is slow.',
       '**Then optimize** if the constraints are large, and resubmit. Only the last submission counts.',
       '**Chase every failing case.** Partial passes earn very little, so finishing the last edge case is worth more than anything else.',
+      '**Keep a copy of your best passing code** (paste it into a comment or a scratch file). If a resubmission passes fewer cases, put the old one back and submit again.',
       '**Test edges:** empty input, one item, duplicates, zeros, negatives.',
     ] },
     { t: 'analogy', text: 'Constraints are like a term sheet: n up to 1,000 means a simple double loop is fine; n up to 100,000 means you need a sort or a dictionary.' },
@@ -48,24 +49,24 @@ const codingStrategy = {
   quiz: [
     {
       q: 'You have 20 minutes left. You have a slow solution that passes the small cases and an idea for a faster one you have not written. What should you do first?',
-      options: ['Delete the slow code and start over', 'Submit the slow solution now, then try the faster idea', 'Wait until the faster one is perfect', 'Move on without submitting'],
+      options: ['Delete the slow code and write the fast one from scratch', 'Submit the slow solution now, then try the faster idea', 'Keep the slow code unsubmitted until the fast one works', 'Move on to the next question and come back later'],
       answer: 1,
       explain: [
-        'You would risk ending with nothing graded.',
-        'Correct. Banking the easy cases is worth points, and you can resubmit later.',
-        'Unsubmitted code earns nothing.',
-        'The slow solution still earns the small cases.',
+        'If the new version is not finished in time, you end with nothing that works.',
+        'Correct. The slow version may well pass every case, and submitting makes sure it is the version graded. Then try the faster idea and resubmit only if it passes more.',
+        'If time runs out mid-rewrite, the version graded is whatever you last ran, which may be the broken new one.',
+        'The slow version is not handed in yet, and some tests time each section, so you may not be able to come back.',
       ],
     },
     {
       q: 'The input has n up to 100,000. Which approach is probably too slow?',
-      options: ['One pass through the list', 'A dictionary lookup per item', 'A loop inside a loop over the whole list', 'Sorting once'],
+      options: ['One pass through the list, adding to a total', 'A dictionary lookup for every item in the list', 'A loop inside a loop over the whole list', 'Sorting once, then one pass to compare neighbours'],
       answer: 2,
       explain: [
-        'One pass is fast.',
-        'Dictionary lookups are fast.',
+        'One pass is about n steps, which is fast.',
+        'Each dictionary lookup is nearly instant, so this is still about n steps.',
         'Correct. Nested loops do about n times n steps, which is 10 billion at this size.',
-        'Sorting is n log n, which is fine.',
+        'Sorting is about n log n and the pass is n, which is fine.',
       ],
     },
   ],
@@ -73,27 +74,27 @@ const codingStrategy = {
 
 export const STAGES = [
   {
-    id: 's0', num: 0, title: 'Orientation', roles: ['ds', 'fde'],
+    id: 's0', title: 'Orientation', roles: ['ds', 'fde'],
     summary: 'Learn the scoreboard and the rules before you learn the code.',
     items: orient,
   },
   {
-    id: 's2', num: 1, title: 'SQL foundations', roles: ['ds', 'fde'],
+    id: 's2', title: 'SQL foundations', roles: ['ds', 'fde'],
     summary: 'Filtering, text, NULLs, grouping and joins, with graded practice on several small databases. The SQL version of what you already do in Excel.',
     items: (() => {
       const by = Object.fromEntries([...sql, ...sqf, ...sqj].map((i) => [i.id, i]));
       const order = ['sql-select', 'sqf-distinct', 'sql-filter', 'sqf-order', 'sqf-like', 'sqf-null', 'sqf-strings', 'sqf-concat', 'sqf-math', 'sqf-case',
-        'sql-group', 'sqf-countd', 'sql-having', 'sqf-having2', 'sql-join', 'sqf-multijoin', 'sql-left', 'sqj-right', 'sqf-selfjoin', 'sqf-union', 'sqf-in', 'sqf-exists', 'sqj-scalar'];
+        'sql-group', 'sqf-countd', 'sql-having', 'sqf-having2', 'sql-join', 'sqf-multijoin', 'sql-left', 'sqj-right', 'sqf-selfjoin', 'sqf-union', 'sqf-in', 'sqf-exists', 'sqj-scalar', 'sql-r-hr1'];
       return [...order.map((id) => by[id]), ...sql.filter((i) => i.optional)];
     })(),
   },
   {
-    id: 's3', num: 2, title: 'SQL advanced', roles: ['ds', 'fde'],
+    id: 's3', title: 'SQL advanced', roles: ['ds', 'fde'],
     summary: 'Window functions, ranking, running totals and date functions, finishing with eight window-function drills (ties, LEAD, frames, NTILE, cumulative share).',
-    items: [...sqlAdv.slice(0, 3), ...sqa.slice(0, 3), ...sqlDrills, ...sqa.slice(3), ...sqw, ...sqlAdv.slice(3)],
+    items: [...sqlAdv.slice(0, 3), ...sqlDrills, ...sqa, ...sqw, ...sqlAdv.slice(3)],
   },
   {
-    id: 's4', num: 3, title: 'Prompt engineering', roles: ['ds', 'fde'],
+    id: 's4', title: 'Prompt engineering', roles: ['ds', 'fde'],
     summary: 'Write prompts whose output matches an exact expected answer.',
     items: (() => {
       const by = Object.fromEntries([...prompts, ...promptMore, ...promptDrills2, ...promptDiagnose].map((i) => [i.id, i]));
@@ -104,7 +105,7 @@ export const STAGES = [
     })(),
   },
   {
-    id: 's5', num: 4, title: 'System design and stakeholders', roles: ['ds', 'fde'],
+    id: 's5', title: 'System design and stakeholders', roles: ['ds', 'fde'],
     summary: 'The vocabulary and judgment behind the multiple-choice questions, then structured written replies.',
     items: (() => {
       const core = systems.filter((i) => !i.optional && !i.id.startsWith('sk-') && i.id !== 'sd-mcq');
@@ -114,8 +115,8 @@ export const STAGES = [
     })(),
   },
   {
-    id: 's1', num: 5, title: 'Python basics', roles: ['ds', 'fde'],
-    summary: 'Variables, decisions, loops, text, dictionaries and functions. The foundation for the coding section, which is worth about a third of the points.',
+    id: 's1', title: 'Python basics', roles: ['ds', 'fde'],
+    summary: 'Variables, decisions, loops, text, dictionaries and functions. The foundation for the coding section, which is worth 50 of about 170 points.',
     items: (() => {
       const core = python.filter((i) => !i.optional);
       const extras = python.filter((i) => i.optional);
@@ -123,12 +124,11 @@ export const STAGES = [
     })(),
   },
   {
-    id: 's6', num: 6, title: 'Coding practice', roles: ['ds', 'fde'],
+    id: 's6', title: 'Coding practice', roles: ['ds', 'fde'],
     summary: 'Exam-style problems that read input and print answers, graded here with feedback. Set 6 is the hardest: array navigation, substrings, sorting and greedy choices with large hidden inputs. Real HackerRank problems are optional extras at the end.',
     items: [
       codingStrategy,
-      ...ioSets.flatMap((set) => set.items).flatMap((i) => (i.id === 'io-search' ? [practice.find((p) => p.id === 'pr-binary'), i, practice.find((p) => p.id === 'pr-peak')] : [i])),
-      practice.find((p) => p.id === 'pr-running'),
+      ...ioSets.flatMap((set) => set.items).flatMap((i) => (i.id === 'io-search' ? [practice.find((p) => p.id === 'pr-binary'), i, practice.find((p) => p.id === 'pr-peak'), practice.find((p) => p.id === 'pr-running')] : [i])),
       { ...(r('cw-6', 'Software Engineer prep kit', 240, 'HackerRank\'s own interview-style problem set.', [
         { label: 'HackerRank Software Engineer Prep Kit', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit', use: 'Needs a HackerRank login. Pick problems tagged easy first. Binary search and running-average problems are good practice.' },
         { label: 'HackerRank Preparation Kits', url: 'https://www.hackerrank.com/interview/preparation-kits', use: '1-week kit: 21 problems.' },
@@ -149,7 +149,7 @@ export const STAGES = [
         { t: 'code', text: 'total = 0\nfor i, x in enumerate(nums):\n    if i > 0 and x > total / i:\n        print(x, "beats the average of the items before it")\n    total += x' },
         { t: 'tip', text: 'Write the simple version first and submit it, then improve until every case passes.' },
       ])), optional: true },
-      { ...(r('cw-8', 'Checkpoint: the 13 representative problems', 300, 'A representative set of 13 problems. If you can solve most of these without help, your coding is in good shape.', [
+      r('cw-8', 'Checkpoint on HackerRank itself: 13 representative problems', 150, 'Do at least the first 6 on HackerRank, so its editor, its function templates and its language dropdown feel familiar before exam day. If you can solve most of the 13 without help, your coding is in good shape.', [
         { label: '1. Solve Me First', url: 'https://www.hackerrank.com/challenges/solve-me-first/problem', use: 'Functions and return' },
         { label: '2. Simple Array Sum', url: 'https://www.hackerrank.com/challenges/simple-array-sum/problem', use: 'Loop with a running total' },
         { label: '3. Birthday Cake Candles', url: 'https://www.hackerrank.com/challenges/birthday-cake-candles/problem', use: 'Max and count' },
@@ -163,44 +163,11 @@ export const STAGES = [
         { label: '11. Diagonal Difference', url: 'https://www.hackerrank.com/challenges/diagonal-difference/problem', use: '2D grid' },
         { label: '12. Count Elements Greater Than Previous Average', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/count-elements-greater-than-previous-average/problem', use: 'Running average' },
         { label: '13. Grid Challenge', url: 'https://www.hackerrank.com/challenges/grid-challenge/problem', use: '2D grid and sorting' },
-      ])), optional: true },
-    ],
-  },
-  {
-        id: 's7', num: 7, title: 'Exam simulation', roles: ['ds', 'fde'],
-    summary: 'Timed exam replicas inside this site, shaped like the real exam and scored out of 170 points by skill area, until you clear the pass mark with room to spare. The real HackerRank sample test is the one outside item worth doing.',
-    items: [
-      mockItem('mock-1', 'Exam replica 1: full timed practice', 90, 'Four multiple choice, one SQL, one coding, one prompt and one written reply, scored out of 170 points like the real exam as candidates describe it.'),
-      mockItem('mock-2', 'Exam replica 2: a different set', 90, 'Take it after reviewing replica 1. Aim to beat the pass mark by at least 10 points.'),
-      opt(mockItem('mock-3', 'Exam replica 3: extra practice', 90, 'Same shape, new questions. Use it if you want another full attempt.')),
-      opt(mockItem('mock-4', 'Exam replica 4: extra practice', 90, 'Same shape, new questions.')),
-      opt(mockItem('mock-5', 'Exam replica 5: extra practice', 90, 'All new questions. Window-function SQL and array navigation coding.')),
-      opt(mockItem('mock-6', 'Exam replica 6: extra practice', 90, 'All new questions. CTE and subquery SQL and string-handling coding.')),
-      opt(mockItem('mock-sprint', 'Review sprint (as many times as you like)', 20, 'Twelve multiple-choice questions drawn from lessons you have studied, weighted toward the ones you got wrong.')),
-      r('sim-1', 'Retake the HackerRank sample test', 45, 'Compare with your first attempt.', [
-        { label: 'HackerRank sample test', url: 'https://www.hackerrank.com/test/sample', use: 'Full screen, timed, no notes.' },
       ]),
-      opt(r('sim-2', 'Skills certification: SQL (Basic)', 90, 'A free, timed SQL test.', [
-        { label: 'HackerRank SQL (Basic) certification', url: 'https://www.hackerrank.com/skills-verification/sql_basic', use: 'Treat it like the real thing: one sitting, no help.' },
-      ])),
-      opt(r('sim-3', 'Skills certification: Python (Basic)', 90, 'A free, timed Python test.', [
-        { label: 'HackerRank Python (Basic) certification', url: 'https://www.hackerrank.com/skills-verification/python_basic', use: 'About 90 minutes, 2 questions.' },
-      ])),
-      opt(r('sim-4', 'Mixed mock 1 (90 minutes)', 120, 'One coding problem, one SQL problem, one prompt drill, four MCQs, one written reply.', [
-        { label: 'Build your own mock', url: 'https://www.hackerrank.com/domains/sql', use: 'Pick one unseen Medium SQL and one unseen Easy/Medium coding problem. Add a new prompt drill from a friend or the AI, plus 4 of your own MCQ flashcards. Time: coding 35 min, SQL 20, prompt 15, MCQ 8, written 7, review 5.' },
-      ], [
-        { t: 'p', text: 'After the mock, write down every point you lost and **why**: syntax, logic, format or time. Fix the pattern, not the single problem.' },
-      ])),
-      opt(r('sim-5', 'Mixed mock 2 (90 minutes)', 120, 'Repeat with new problems.', [
-        { label: 'HackerRank Interview Preparation Kit', url: 'https://www.hackerrank.com/interview/interview-preparation-kit', use: 'Choose problems you have not seen.' },
-      ])),
-      opt(r('sim-6', 'Mixed mock 3 (90 minutes)', 120, 'Aim for your target score two times in a row.', [
-        { label: 'HackerRank Mock Interviews', url: 'https://www.hackerrank.com/mock-interviews', use: 'Optional extra timed practice.' },
-      ])),
     ],
   },
   {
-    id: 's8', num: 8, title: 'Patterns and Big-O (Forward Deployed Engineer path)', roles: ['fde'],
+    id: 's8', title: 'Patterns and Big-O (Forward Deployed Engineer path)', roles: ['fde'],
     summary: 'Needed if you aim for the 70% bar. Arrays, hashmaps, sorting, binary search and efficiency.',
     items: [
       r('pt-bigo', 'Big-O in plain English', 120, 'How code slows as input grows.', [
@@ -220,7 +187,7 @@ export const STAGES = [
     ],
   },
   {
-    id: 's9', num: 9, title: 'Greedy and heaps (Forward Deployed Engineer path)', roles: ['fde'],
+    id: 's9', title: 'Greedy and heaps (Forward Deployed Engineer path)', roles: ['fde'],
     summary: 'Needed if you aim for the 70% bar. Sort-then-choose problems and priority queues.',
     items: [
       r('gh-greedy', 'Greedy algorithms', 720, 'When taking the best choice now works.', [
@@ -240,16 +207,77 @@ export const STAGES = [
     ],
   },
   {
-    id: 's10', num: 10, title: 'Interview preparation', roles: ['ds', 'fde'], optional: true,
+    id: 's7', title: 'Exam simulation', roles: ['ds', 'fde'],
+    summary: 'Timed exam replicas inside this site, shaped like the real exam and scored out of 170 points by skill area, until you clear the pass mark with room to spare. The real HackerRank sample test is the one outside item worth doing.',
+    items: [
+      mockItem('mock-1', 'Exam replica 1: full timed practice', 90, 'Four multiple choice, one SQL, one coding, one prompt and one written reply, scored out of 170 points like the real exam as candidates describe it.'),
+      mockItem('mock-2', 'Exam replica 2: a different set', 90, 'Take it after reviewing replica 1. Aim to beat the pass mark by at least 10 points.'),
+      opt(mockItem('mock-3', 'Exam replica 3: extra practice', 90, 'Same shape, new questions. Use it if you want another full attempt.')),
+      opt(mockItem('mock-4', 'Exam replica 4: extra practice', 90, 'Same shape, new questions.')),
+      opt(mockItem('mock-5', 'Exam replica 5: extra practice', 90, 'All new questions. Window-function SQL and array navigation coding.')),
+      opt(mockItem('mock-6', 'Exam replica 6: extra practice', 90, 'All new questions. CTE and subquery SQL and string-handling coding.')),
+      opt(mockItem('mock-sprint', 'Review sprint (as many times as you like)', 20, 'Twelve multiple-choice questions drawn from lessons you have studied, weighted toward the ones you got wrong.')),
+      r('sim-1', 'Retake the HackerRank sample test', 45, 'Compare with your first attempt.', [
+        { label: 'HackerRank sample test', url: 'https://www.hackerrank.com/test/sample', use: 'Full screen, timed, no notes.' },
+      ]),
+      opt(r('sim-2', 'Skills certification: SQL (Basic)', 90, 'A free, timed SQL test.', [
+        { label: 'HackerRank SQL (Basic) certification', url: 'https://www.hackerrank.com/skills-verification/sql_basic', use: 'Treat it like the real thing: one sitting, no help.' },
+      ])),
+      opt(r('sim-3', 'Skills certification: Python (Basic)', 90, 'A free, timed Python test.', [
+        { label: 'HackerRank Python (Basic) certification', url: 'https://www.hackerrank.com/skills-verification/python_basic', use: 'About 90 minutes, 2 questions.' },
+      ])),
+      opt(r('sim-4', 'Mixed mock 1 (90 minutes)', 120, 'One coding problem, one SQL problem, one prompt drill, four MCQs, one written reply.', [
+        { label: 'Build your own mock', url: 'https://www.hackerrank.com/domains/sql', use: 'Pick one unseen Medium SQL and one unseen Easy/Medium coding problem. Add a new prompt drill from a friend or the AI, plus 4 of your own MCQ flashcards. Time: prompt 25 min, SQL 20, coding 28, MCQ 6, written 6, review 5.' },
+      ], [
+        { t: 'p', text: 'After the mock, write down every point you lost and **why**: syntax, logic, format or time. Fix the pattern, not the single problem.' },
+      ])),
+      opt(r('sim-5', 'Mixed mock 2 (90 minutes)', 120, 'Repeat with new problems.', [
+        { label: 'HackerRank Interview Preparation Kit', url: 'https://www.hackerrank.com/interview/interview-preparation-kit', use: 'Choose problems you have not seen.' },
+      ])),
+      opt(r('sim-6', 'Mixed mock 3 (90 minutes)', 120, 'Aim for your target score two times in a row.', [
+        { label: 'HackerRank Mock Interviews', url: 'https://www.hackerrank.com/mock-interviews', use: 'Optional extra timed practice.' },
+      ])),
+    ],
+  },
+  {
+    id: 's10', title: 'Interview preparation', roles: ['ds', 'fde'], optional: true,
     summary: 'Stories, presenting an Agentforce project the Deployment Strategist way, and executive conversations. The usual order is interview first, then the HackerRank test, so do these when your interview is scheduled. Not part of your daily study target.',
     items: interview,
   },
 ];
 
+// Quizzes were written with the right answer in whatever slot came naturally (usually B). Shuffle each
+// question once, seeded by its id, so the position carries no clue and stays the same on every visit.
+function seeded(str) {
+  let h = 2166136261;
+  for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+}
+for (const stage of STAGES) for (const item of stage.items) (item.quiz || []).forEach((q, qi) => {
+  if (q.options.length !== 4) return;
+  if (q.options.some((o) => /\b(all|none) of the above\b|\bboth (of these|a and b)\b/i.test(o)) || q.options.every((o) => /^[\d\s.,%$x+-]+$/i.test(o))) return;
+  const rnd = seeded(`${item.id}#${qi}`);
+  const order = [0, 1, 2, 3];
+  for (let i = 3; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  q.options = order.map((k) => q.options[k]);
+  if (q.explain) q.explain = order.map((k) => q.explain[k]);
+  q.answer = order.indexOf(q.answer);
+});
+
 export const ROLES = {
   ds: { name: 'Deployment Strategist', bar: 60, short: 'Strategist' },
   fde: { name: 'Forward Deployed Engineer', bar: 70, short: 'Engineer' },
 };
+
+/** Stage number as the learner sees it: its position on their own role's path. */
+export function stageNum(stage, role) {
+  return STAGES.filter((s) => s.roles.includes(role)).findIndex((s) => s.id === stage.id);
+}
+
+export function stageName(stage, role) {
+  const n = stageNum(stage, role);
+  return n < 0 ? `Stretch: ${stage.title}` : `Stage ${n}: ${stage.title}`;
+}
 
 /** Ordered list of items for a role, with stage info attached. */
 export function itemsFor(role) {

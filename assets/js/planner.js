@@ -31,11 +31,12 @@ export function computePlan(state, now = new Date()) {
   const exam = parseYmd(p.examDate);
   const start = parseYmd(p.startDate || ymd(today));
 
-  const daysLeft = Math.max(0, Math.round((exam - today) / 86400000));
+  const rawDays = Math.round((exam - today) / 86400000);
+  const daysLeft = Math.max(0, rawDays);
   const studyDaysLeft = countStudyDays(today, exam, p.studyDays);
   const buffer = bufferFor(studyDaysLeft);
   const usable = Math.max(1, studyDaysLeft - buffer);
-  const perDay = remaining === 0 ? 0 : Math.ceil(remaining / usable);
+  const perDay = remaining === 0 || studyDaysLeft === 0 ? 0 : Math.ceil(remaining / usable);
 
   const startDays = Math.max(1, countStudyDays(start, exam, p.studyDays));
   const baseline = Math.ceil(total / Math.max(1, startDays - bufferFor(startDays)));
@@ -43,7 +44,9 @@ export function computePlan(state, now = new Date()) {
   const doneItems = items.filter(done).length;
   let status = 'on';
   if (remaining === 0) status = 'done';
-  else if (daysLeft <= 0) status = 'past';
+  else if (rawDays < 0) status = 'past';
+  else if (rawDays === 0) status = 'examday';
+  else if (studyDaysLeft === 0) status = 'nodays';
   else if (perDay > baseline * 1.15) status = 'behind';
   else if (perDay < baseline * 0.85) status = 'ahead';
 
@@ -63,8 +66,8 @@ export function computePlan(state, now = new Date()) {
   return {
     items, total, remaining, daysLeft, studyDaysLeft, buffer, perDay, baseline, status,
     doneItems, itemCount: items.length, studiedToday, isStudyDay, queue, nextItem,
-    pct: total ? Math.round(((total - remaining) / total) * 100) : 0,
-    tooHeavy: perDay > 180,
+    pct: remaining === 0 ? 100 : Math.min(99, Math.floor(((total - remaining) / total) * 100)),
+    tooHeavy: studyDaysLeft > 0 && perDay > 180,
     streak: computeStreak(state, today),
   };
 }
@@ -93,12 +96,14 @@ export function lastSevenDays(state, now = new Date()) {
 }
 
 /** Preview used on the setup screen before anything is saved. */
-export function previewPlan(role, examDateStr, studyDays, now = new Date()) {
+export function previewPlan(role, examDateStr, studyDays, now = new Date(), progress = {}) {
   if (!examDateStr || !studyDays.length) return null;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const exam = parseYmd(examDateStr);
   const days = countStudyDays(today, exam, studyDays);
-  const total = itemsFor(role).filter((i) => !(i.stage.optional || i.optional)).reduce((a, i) => a + i.minutes, 0);
+  const items = itemsFor(role).filter((i) => !(i.stage.optional || i.optional));
+  const total = items.reduce((a, i) => a + i.minutes, 0);
+  const remaining = items.filter((i) => !progress[i.id]?.done).reduce((a, i) => a + i.minutes, 0);
   const usable = Math.max(1, days - bufferFor(days));
-  return { total, days, perDay: Math.ceil(total / usable), weeks: Math.round((exam - today) / 604800000) };
+  return { total, remaining, days, perDay: Math.ceil(remaining / usable), weeks: Math.round((exam - today) / 604800000) };
 }

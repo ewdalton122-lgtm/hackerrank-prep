@@ -1,6 +1,6 @@
 // Progress, motivation and rewards: the big progress banner, XP and levels, and the celebrations.
 // Everything here is derived from saved progress, so nothing extra needs to sync.
-import { STAGES, itemsFor, findItem } from '../../content/curriculum.js';
+import { STAGES, itemsFor, findItem, stageNum } from '../../content/curriculum.js';
 import { computePlan, ymd } from './planner.js';
 import { getState, subscribe } from './store.js';
 import { esc, fmtMin } from './ui.js';
@@ -138,7 +138,7 @@ export function heroHtml(s, kind = 'full', opts = {}) {
       <div class="hc ringc">${ring(plan.studiedToday, goal)}<div><div class="hc-t">${plan.studiedToday} / ${goal} min</div><div class="hc-s">${plan.studiedToday >= goal ? 'Daily goal reached' : 'today\'s goal'}</div></div></div>
       <div class="hc"><div class="hc-t">${nextMs ? `Next: ${nextMs[0]}%` : 'Finish line'}</div><div class="hc-s">${nextMs ? `about ${fmtMin(toMs)} of study away` : 'Keep mocking until you clear the bar twice.'}</div></div>
     </div>
-    ${plan.nextItem ? `<div class="hero-next"><div><div class="hc-s">Next up${info.current ? ` &middot; ${stageLeft} item${stageLeft === 1 ? '' : 's'} left in Stage ${info.current.st.num}` : ''}</div><div class="hn-t">${esc(plan.nextItem.title)}</div></div><a class="btn go" href="#/item/${plan.nextItem.id}">${plan.doneItems ? 'Continue' : 'Start'} &rarr;</a></div>` : ''}
+    ${plan.nextItem ? `<div class="hero-next"><div><div class="hc-s">Next up${info.current ? ` &middot; ${stageLeft} item${stageLeft === 1 ? '' : 's'} left in Stage ${stageNum(info.current.st, s.profile.role)}` : ''}</div><div class="hn-t">${esc(plan.nextItem.title)}</div></div><a class="btn go" href="#/item/${plan.nextItem.id}">${plan.doneItems ? 'Continue' : 'Start'} &rarr;</a></div>` : ''}
   </section>`;
 }
 
@@ -168,6 +168,7 @@ function refreshHeroes() {
 // ---------------------------------------------------------------- rewards
 let prev = null;
 let timer = null;
+let quiet = false;
 
 function snap(s) {
   const plan = computePlan(s);
@@ -178,6 +179,7 @@ function snap(s) {
     done: new Set(Object.entries(s.progress).filter(([, p]) => p.done).map(([id]) => id)),
     stages: new Set(info.rows.filter((r) => r.complete).map((r) => r.st.id)),
     studied: plan.studiedToday, goal: plan.perDay, day: ymd(), info,
+    plan: `${s.profile.role}|${s.profile.examDate}|${(s.profile.studyDays || []).join('')}`,
   };
 }
 
@@ -190,6 +192,9 @@ function check() {
   prev = cur;
   refreshHeroes();
   if (!before || before.day !== cur.day) return;
+  // Progress that arrived from another device, or a changed plan in Settings, is not new work here.
+  if (quiet) { quiet = false; return; }
+  if (before.plan !== cur.plan) return;
 
   const newlyDone = [...cur.done].filter((id) => !before.done.has(id));
   // A restore, a reset or a sync from another device changes lots at once. Update quietly in that case.
@@ -204,11 +209,11 @@ function check() {
     const [a, b] = CAN[stageDone] || [];
     const stage = STAGES.find((st) => st.id === stageDone);
     celebrate({
-      kicker: stage ? `Stage ${stage.num} complete` : `${cur.pct}% of the path`,
+      kicker: stage ? `Stage ${stageNum(stage, s.profile.role)} complete` : `${cur.pct}% of the path`,
       title: crossed ? crossed[1] : `${stage.title.replace(/ \(.*\)/, '')} done`,
       body: crossed ? crossed[2] : '',
       note: stage ? `${a}: ${b}` : skillNote(cur.info),
-      cta: cur.info.current ? `On to Stage ${cur.info.current.st.num}` : 'Keep going',
+      cta: cur.info.current ? `On to Stage ${stageNum(cur.info.current.st, s.profile.role)}` : 'Keep going',
     });
     xpPop(`+${gain} XP`, 'big');
     return;
@@ -232,5 +237,6 @@ export function initMomentum() {
   const s = getState();
   prev = s.profile ? snap(s) : null;
   document.addEventListener('zta:progress', schedule);
+  document.addEventListener('zta:synced', () => { quiet = true; schedule(); });
   subscribe(schedule);
 }

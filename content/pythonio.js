@@ -13,11 +13,11 @@ const P = (id, title, minutes, blurb, prompt, tests, hints, solution, blocks = [
 
 // ---------------------------------------------------------------- Set 1: first programs
 export const ioSet1 = [
-  P('io-hello', 'Greet by name', 25, 'Read a line of text and print a sentence.', 'Read one line containing a name. Print `Hello, NAME!` using that name.', [
+  P('io-hello', 'Greet by name', 25, 'Read a line of text and print a sentence.', 'Read one line containing a name. Remove any spaces before or after it, then print `Hello, NAME!` using that name.', [
     t('Ava\n', 'Hello, Ava!'),
     t('Sam Lee\n', 'Hello, Sam Lee!'),
     t('  Zoe  \n', 'Hello, Zoe!', 'Spaces around the name should be removed.'),
-  ], ['`name = input()` reads one line.', '`.strip()` removes spaces at both ends.', '`print(f"Hello, {name}!")`'],
+  ], ['`name = input()` reads one line.', '`.strip()` removes spaces at both ends: `name = input().strip()`.', '`print("Hello, " + name + "!")`, or the f-string `print(f"Hello, {name}!")`.'],
   'name = input().strip()\nprint(f"Hello, {name}!")\n', [
     { t: 'p', text: 'Every exam problem follows the same three steps: **read** the input, **compute** the answer, **print** it. This first one has almost no computing.' },
   ]),
@@ -148,7 +148,7 @@ export const ioSet4 = [
     t('9\n10 20 20 10 10 30 50 10 20\n', '3'),
     t('3\n1 2 3\n', '0'),
     t('4\n5 5 5 5\n', '2', 'Four socks of one colour make two pairs.'),
-  ], ['Count how many socks of each colour there are.', 'A colour with `c` socks makes `c // 2` pairs.', 'Add up `c // 2` over all the colours. `collections.Counter` does the counting for you.'],
+  ], ['Count how many socks of each colour there are.', 'A colour with `c` socks makes `c // 2` pairs.', 'Add up `c // 2` over all the colours. `from collections import Counter` at the top lets `Counter(colors)` do the counting for you.'],
   'from collections import Counter\nn = int(input())\ncolors = input().split()\nprint(sum(c // 2 for c in Counter(colors).values()))\n'),
 
   P('io-birds', 'Most sighted bird', 35, 'Counting with a tie-break.', 'The first line is `n`. The second line holds `n` bird type numbers. Print the type that was sighted most often. If several types tie, print the **smallest** type number.', [
@@ -169,7 +169,7 @@ export const ioSet4 = [
     t('cde\nabc\n', '4'),
     t('a\nb\n', '2'),
     t('abc\nabc\n', '0', 'Identical words need no deletions.'),
-  ], ['Count the letters in each word with `Counter`.', 'For each letter, the extra letters are the difference between the two counts.', 'Add up `abs(a[c] - b[c])` over all letters that appear in either word.'],
+  ], ['Count the letters in each word: put `from collections import Counter` at the top, then `a = Counter(word1)`.', 'For each letter, the extra letters are the difference between the two counts.', 'Add up `abs(a[c] - b[c])` over all letters that appear in either word.'],
   'from collections import Counter\na = Counter(input().strip())\nb = Counter(input().strip())\nprint(sum(abs(a[c] - b[c]) for c in set(a) | set(b)))\n'),
 ];
 
@@ -193,7 +193,8 @@ export const ioSet5 = [
     t('3\n3 -7 0\n', '3'),
     t('5\n1 -3 71 68 17\n', '3'),
     t('2\n5 5\n', '0', 'Equal values have a gap of 0.'),
-  ], ['Comparing every pair works for small lists but is slow for big ones.', 'Sort the numbers. The closest pair must be neighbours.', '`min(b - a for a, b in zip(nums, nums[1:]))` on the sorted list.'],
+    t(`100000\n${Array.from({ length: 100000 }, (_, i) => ((i * 7919) % 100000) * 3).join(' ')}\n`, '3', 'Large input. Comparing every pair is too slow here; sort first.'),
+  ], ['Comparing every pair works for small lists but is slow for big ones.', 'Sort the numbers. The closest pair must be neighbours.', 'On the sorted list, loop `for i in range(1, n):` and keep the smallest `nums[i] - nums[i - 1]`.'],
   'n = int(input())\nnums = sorted(map(int, input().split()))\nprint(min(b - a for a, b in zip(nums, nums[1:])))\n'),
 
   P('io-gridsort', 'Sort rows, check columns', 55, 'Two ideas combined.', 'The first line is `n`. The next `n` lines are strings of the same length. Sort the letters inside each row alphabetically. Then print `YES` if every column reads in non-decreasing alphabetical order from top to bottom, otherwise `NO`.', [
@@ -203,7 +204,7 @@ export const ioSet5 = [
   ], ['Sort each row: `"".join(sorted(row))`.', 'Compare each row with the one above it, column by column.', 'If any letter is smaller than the letter above it, print `NO` and stop. If you finish with no problems, print `YES`.'],
   'n = int(input())\nrows = ["".join(sorted(input().strip())) for _ in range(n)]\nok = True\nfor r in range(1, n):\n    for c in range(len(rows[r])):\n        if rows[r][c] < rows[r - 1][c]:\n            ok = False\nprint("YES" if ok else "NO")\n'),
 
-  P('io-search', 'Find it fast', 50, 'Binary search on a sorted list.', 'The first line has `n` and a `target`. The second line has `n` integers in increasing order. Print the **index** (counting from 0) of the target, or `-1` if it is not there.', [
+  P('io-search', 'Find it fast', 50, 'Binary search on a sorted list: the classic halving pattern.', 'The first line has `n` and a `target`. The second line has `n` integers in increasing order. Print the **index** (counting from 0) of the target, or `-1` if it is not there.', [
     t('5 7\n1 3 5 7 9\n', '3'),
     t('5 4\n1 3 5 7 9\n', '-1'),
     t('1 5\n5\n', '0', 'A single item that matches.'),
