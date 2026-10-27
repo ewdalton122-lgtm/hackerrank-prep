@@ -238,7 +238,7 @@ export const systems = [
       prompt: 'A VP says in the hallway: "We need the AI agent to handle all of our customer service by the end of the quarter." You know the customer data is scattered across three systems and not yet cleaned. Write the reply you would send (about 100 to 150 words).',
       minWords: 60,
       rubric: [
-        { id: 'goal', label: 'Acknowledges the VP\'s goal before raising problems', test: /goal|understand|appreciate|great|agree|ambition|makes sense|shared/i },
+        { id: 'goal', label: 'Acknowledges the VP\'s goal before raising problems', test: /goal|understand|appreciate|great|agree|ambition|makes sense|shared|outcome|aiming|thanks|thank you|aim/i },
         { id: 'fact', label: 'States the data constraint neutrally, without blaming anyone', test: /data|systems|clean|scattered|consolidat|ready/i },
         { id: 'options', label: 'Offers at least two options (for example phased scope vs full scope)', test: /option|alternatively|either|phase|first|then|versus|instead/i },
         { id: 'rec', label: 'Makes a clear recommendation with a reason', test: /recommend|suggest|propose|best path|i['’]d start/i },

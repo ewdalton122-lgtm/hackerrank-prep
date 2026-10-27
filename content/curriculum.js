@@ -6,6 +6,7 @@ import { systems } from './systems.js';
 import { practice } from './practice.js';
 import { sqlDrills } from './sqlpractice.js';
 import { promptMore } from './promptdrills.js';
+import { interview } from './interview.js';
 
 const r = (id, title, minutes, blurb, links, blocks) => ({ id, title, minutes, blurb, links, blocks });
 
@@ -224,6 +225,11 @@ export const STAGES = [
         { label: 'LeetCode: Top K Frequent Elements', url: 'https://leetcode.com/problems/top-k-frequent-elements/', use: 'Count, then heap.' },
       ]),
     ],
+  },
+  {
+    id: 's10', num: 10, title: 'Interview preparation', roles: ['ds', 'fde'], optional: true,
+    summary: 'After the assessment: stories, presenting a build, and executive conversations. Not part of your daily study target.',
+    items: interview,
   },
 ];
 

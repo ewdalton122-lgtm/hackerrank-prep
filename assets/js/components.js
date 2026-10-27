@@ -387,7 +387,7 @@ export function mountWritten(host, item, onPass) {
 
   host.querySelector('[data-act="check"]').onclick = () => {
     if (words() < ex.minWords) {
-      fbbox.innerHTML = feedback('bad', `Your reply is ${words()} words. Aim for at least ${ex.minWords}.`, ['Use the five-part structure from the lesson: goal, constraint, two options, recommendation, next step.']);
+      fbbox.innerHTML = feedback('bad', `Your reply is ${words()} words. Aim for at least ${ex.minWords}.`, ['Follow the structure from the lesson above. Each part needs at least a sentence or two.']);
       review.innerHTML = '';
       noteMiss(item.id, 'ex');
       return;

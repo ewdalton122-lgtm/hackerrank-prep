@@ -1,4 +1,5 @@
 import { computeReadiness, pct } from './readiness.js';
+import { REFERENCE } from '../../content/reference.js';
 import { getState, update, subscribe, initRemote, remoteEnabled, getUser, signIn, signOut, fetchInternal, verifyCode, linkError, setPart, replaceState, resetAll, syncStatus } from './store.js';
 import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/curriculum.js';
 import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } from './planner.js';
@@ -10,6 +11,7 @@ const NAV = [
   ['#/today', 'Today', 'M4 12l8-8 8 8M6 10v9h12v-9'],
   ['#/roadmap', 'Roadmap', 'M4 6h16M4 12h16M4 18h10'],
   ['#/readiness', 'Readiness', 'M4 20V10M10 20V4M16 20v-7M22 20H2'],
+  ['#/reference', 'Reference', 'M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM8 4v13'],
   ['#/internal', 'Internal', 'M6 10V8a6 6 0 1112 0v2M5 10h14v10H5z'],
   ['#/settings', 'Settings', 'M12 8a4 4 0 100 8 4 4 0 000-8z'],
 ];
@@ -192,7 +194,7 @@ function viewRoadmap() {
       const done = st.items.filter((i) => s.progress[i.id]?.done).length;
       const mins = st.items.reduce((a, i) => a + i.minutes, 0);
       const pct = Math.round((done / st.items.length) * 100);
-      return `<div class="card"><div class="stagehead"><h2>Stage ${st.num}: ${esc(st.title)}</h2><span class="muted small">${done}/${st.items.length} done &middot; ${fmtMin(mins)}</span></div>
+      return `<div class="card"><div class="stagehead"><h2>Stage ${st.num}: ${esc(st.title)}${st.optional ? ' ' + pill('After the assessment', 'gray') : ''}</h2><span class="muted small">${done}/${st.items.length} done &middot; ${fmtMin(mins)}</span></div>
         <p class="muted">${esc(st.summary)}</p><div class="bar ${pct === 100 ? 'ok' : ''}" style="margin-bottom:8px"><i style="width:${pct}%"></i></div>
         <ul class="items">${st.items.map((i) => itemRow({ ...i, noStage: true }, next?.id === i.id)).join('')}</ul></div>`;
     }).join('')}
@@ -293,6 +295,19 @@ function viewReadiness() {
   return main;
 }
 
+// ------------------------------------------------------------------ reference
+function viewReference() {
+  const main = shell(`
+    <div class="pagehead"><h1>Reference</h1><p>A cheat sheet for the things the practice problems use. Keep it open in another tab while you work.</p></div>
+    <div class="card"><div class="chips">${REFERENCE.map((r) => `<a class="chip" href="#/reference" data-jump="${r.id}">${esc(r.title.split(':')[0])}${r.title.includes(':') ? ': ' + esc(r.title.split(':')[1].trim().split(' ').slice(0, 2).join(' ')) : ''}</a>`).join('')}</div></div>
+    ${REFERENCE.map((r) => `<div class="card lesson" id="${r.id}"><h2>${esc(r.title)}</h2>${renderBlocks(r.blocks)}</div>`).join('')}`, '#/reference');
+  main.querySelectorAll('[data-jump]').forEach((el) => el.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById(el.dataset.jump)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  return main;
+}
+
 // ------------------------------------------------------------------ internal (gated)
 async function viewInternal() {
   const user = getUser();
@@ -381,6 +396,7 @@ async function render() {
   if (a === 'roadmap') return viewRoadmap();
   if (a === 'item') return viewItem(b);
   if (a === 'readiness') return viewReadiness();
+  if (a === 'reference') return viewReference();
   if (a === 'internal') return viewInternal();
   if (a === 'settings') return viewSettings();
   location.hash = '#/today';

@@ -226,3 +226,7 @@ details.schema summary { cursor: pointer; font-weight: 600; color: var(--ink); }
 .secs { display: grid; gap: 16px; }
 .sec-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
 .sec p { margin: 6px 0 0; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 6px 12px; border-radius: 99px; background: var(--brand-bg); color: var(--brand-d); font-size: .85rem; font-weight: 600; text-decoration: none; }
+.chip:hover { background: #dcebfb; }

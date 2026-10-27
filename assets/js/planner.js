@@ -23,7 +23,7 @@ const bufferFor = (n) => Math.min(5, Math.floor(n * 0.1));
 export function computePlan(state, now = new Date()) {
   const p = state.profile;
   if (!p) return null;
-  const items = itemsFor(p.role);
+  const items = itemsFor(p.role).filter((i) => !i.stage.optional);
   const done = (i) => !!state.progress[i.id]?.done;
   const total = items.reduce((a, i) => a + i.minutes, 0);
   const remaining = items.filter((i) => !done(i)).reduce((a, i) => a + i.minutes, 0);
@@ -98,7 +98,7 @@ export function previewPlan(role, examDateStr, studyDays, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const exam = parseYmd(examDateStr);
   const days = countStudyDays(today, exam, studyDays);
-  const total = itemsFor(role).reduce((a, i) => a + i.minutes, 0);
+  const total = itemsFor(role).filter((i) => !i.stage.optional).reduce((a, i) => a + i.minutes, 0);
   const usable = Math.max(1, days - bufferFor(days));
   return { total, days, perDay: Math.ceil(total / usable), weeks: Math.round((exam - today) / 604800000) };
 }
