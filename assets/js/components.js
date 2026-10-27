@@ -172,7 +172,7 @@ export function mountPython(host, item, onPass) {
 
   function renderPythonResult(res) {
     if (res.timeout) {
-      fbbox.innerHTML = feedback('bad', 'Your code ran for more than 6 seconds and was stopped.', ['This is usually an endless loop. For a `while` loop, check that something inside changes the condition.', 'For a `for` loop over a huge range, look for a simpler approach.']);
+      fbbox.innerHTML = feedback('bad', 'Your code ran for more than 6 seconds and was stopped.', ['This is usually an endless loop. For a `while` loop, check that something inside changes the condition.', 'For a `for` loop over a huge range, look for a simpler approach.', ...(ex.io ? ['If it works on small inputs but not here, it is probably too slow for the large hidden inputs (up to 100000 values). Look for a way to do one pass instead of re-checking every pair or every stretch.'] : [])]);
       return fail();
     }
     if (res.error) {

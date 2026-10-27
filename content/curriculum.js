@@ -6,6 +6,7 @@ import { systems } from './systems.js';
 import { practice } from './practice.js';
 import { sqlDrills } from './sqlpractice.js';
 import { sqf, sqa } from './sqlmore.js';
+import { sqw } from './sqlwindows.js';
 import { promptMore } from './promptdrills.js';
 import { interview } from './interview.js';
 import { pythonMore } from './pythonmore.js';
@@ -79,8 +80,8 @@ export const STAGES = [
   },
   {
     id: 's3', num: 2, title: 'SQL advanced', roles: ['ds', 'fde'],
-    summary: 'Window functions, ranking, running totals and date functions.',
-    items: [...sqlAdv.slice(0, 3), ...sqa.slice(0, 3), ...sqlDrills, ...sqa.slice(3), ...sqlAdv.slice(3)],
+    summary: 'Window functions, ranking, running totals and date functions, finishing with eight window-function drills (ties, LEAD, frames, NTILE, cumulative share).',
+    items: [...sqlAdv.slice(0, 3), ...sqa.slice(0, 3), ...sqlDrills, ...sqa.slice(3), ...sqw, ...sqlAdv.slice(3)],
   },
   {
     id: 's4', num: 3, title: 'Prompt engineering', roles: ['ds', 'fde'],
@@ -114,7 +115,7 @@ export const STAGES = [
   },
   {
     id: 's6', num: 6, title: 'Coding practice', roles: ['ds', 'fde'],
-    summary: 'Exam-style problems that read input and print answers, graded here with feedback. Real HackerRank problems are optional extras at the end.',
+    summary: 'Exam-style problems that read input and print answers, graded here with feedback. Set 6 is the hardest: array navigation, substrings, sorting and greedy choices with large hidden inputs. Real HackerRank problems are optional extras at the end.',
     items: [
       codingStrategy,
       ...ioSets.flatMap((set) => set.items).flatMap((i) => (i.id === 'io-search' ? [practice.find((p) => p.id === 'pr-binary'), i, practice.find((p) => p.id === 'pr-peak')] : [i])),

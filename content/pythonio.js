@@ -1,3 +1,4 @@
+import { ioSet6 } from './pythonhard.js';
 // Exam-style Python problems: the program reads from input() and prints the answer.
 // Every problem is written from scratch. Visible tests teach; hidden tests check the edge cases.
 // t(input, output, edge?) -> a test; passing an edge message makes it a hidden test.
@@ -216,4 +217,5 @@ export const ioSets = [
   { id: 'io-set-3', title: 'Coding set 3: strings', items: ioSet3 },
   { id: 'io-set-4', title: 'Coding set 4: dictionaries and sets', items: ioSet4 },
   { id: 'io-set-5', title: 'Coding set 5: sorting and greedy choices', items: ioSet5 },
+  { id: 'io-set-6', title: 'Coding set 6: exam-level problems', items: ioSet6 },
 ];
