@@ -5,11 +5,13 @@ import { STAGES, ROLES, itemsFor, findItem, requiredParts } from '../../content/
 import { computePlan, previewPlan, lastSevenDays, ymd, parseYmd, DAY_NAMES } from './planner.js';
 import { esc, inline, fmtMin, toast, renderBlocks, feedback } from './ui.js';
 import { mountQuiz, mountPython, mountSql, mountPrompt, mountWritten } from './components.js';
+import { mountMockPage, mountMockList, stopMock, mockStats, verdict } from './mock.js';
 
 const app = document.getElementById('app');
 const NAV = [
   ['#/today', 'Today', 'M4 12l8-8 8 8M6 10v9h12v-9'],
   ['#/roadmap', 'Roadmap', 'M4 6h16M4 12h16M4 18h10'],
+  ['#/mocks', 'Mock exams', 'M12 6v6l4 2M12 3a9 9 0 100 18 9 9 0 000-18z'],
   ['#/readiness', 'Readiness', 'M4 20V10M10 20V4M16 20v-7M22 20H2'],
   ['#/reference', 'Reference', 'M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM8 4v13'],
   ['#/internal', 'Internal', 'M6 10V8a6 6 0 1112 0v2M5 10h14v10H5z'],
@@ -143,6 +145,7 @@ function viewToday() {
       <div class="stat"><div class="n">${plan.streak}</div><div class="l">study-day streak</div></div>
       <a class="stat" href="#/readiness" style="display:block;text-decoration:none"><div class="n">${ready.enoughData ? pct(ready.overall) : '...'}</div><div class="l">readiness${ready.enoughData && ready.focus ? `. Focus: ${esc(ready.focus.name)}` : ' (builds as you practise)'}</div></a>
     </div>
+    ${journeyMap(s)}
     <div class="card">
       <div class="stagehead"><h2>${statusMsg[0] === 'On track' ? 'Your plan' : 'Your plan'}</h2>${pill(statusMsg[0], statusMsg[1])}</div>
       <p>${statusMsg[2]}</p>
@@ -165,7 +168,23 @@ function viewToday() {
   return main;
 }
 
+
+// A one-glance map of the whole path: every required stage, how far through it you are, and where you are now.
+function journeyMap(s) {
+  const role = s.profile.role;
+  const stages = STAGES.filter((st) => st.roles.includes(role) && !st.optional);
+  const rows = stages.map((st) => {
+    const req = st.items.filter((i) => !i.optional);
+    const done = req.filter((i) => s.progress[i.id]?.done).length;
+    return { st, done, total: req.length, pct: req.length ? Math.round((done / req.length) * 100) : 0 };
+  });
+  const current = rows.findIndex((r) => r.done < r.total);
+  return `<div class="card"><div class="stagehead"><h2>Where you are on the path</h2><span class="muted small">${current === -1 ? 'All stages complete' : `Now on Stage ${rows[current].st.num}`}</span></div>
+    <div class="journey">${rows.map((r, i) => `<a href="#/roadmap" class="jstep ${r.pct === 100 ? 'done' : i === current ? 'now' : ''}"><span class="jn">${r.pct === 100 ? '&#10003;' : r.st.num}</span><span class="jt">${esc(r.st.title.replace(/ \(.*\)/, ''))}</span><span class="jbar"><i style="width:${r.pct}%"></i></span><span class="jp">${r.done}/${r.total}</span></a>`).join('')}</div></div>`;
+}
+
 function itemKind(it) {
+  if (it.mock) return 'Timed mock exam';
   if (it.optional) return 'Optional extra';
   if (it.exercise?.kind === 'python') return 'Python practice';
   if (it.exercise?.kind === 'sql') return 'SQL practice';
@@ -257,6 +276,21 @@ function viewItem(id) {
   return main;
 }
 
+
+// ------------------------------------------------------------------ mock exams
+function viewMocks() {
+  const s = getState();
+  const main = shell('<div class="pagehead"><h1>Mock exams</h1><p>Timed practice under exam conditions, scored by skill area. Each full mock uses questions that are not in the lessons.</p></div><div id="mockhost"></div>', '#/mocks');
+  mountMockList(document.getElementById('mockhost'), s.profile.role);
+  return main;
+}
+function viewMock(id) {
+  const s = getState();
+  const main = shell('<div id="mockhost"></div>', '#/mocks');
+  mountMockPage(document.getElementById('mockhost'), id, s.profile.role);
+  return main;
+}
+
 // ------------------------------------------------------------------ readiness
 function viewReadiness() {
   const s = getState();
@@ -278,6 +312,7 @@ function viewReadiness() {
       <p class="small muted" style="margin-top:8px">The marker is the ${role.bar}% pass mark for ${esc(role.name)}.</p>
       <p>${msg[2]}</p>
     </div>
+    ${(() => { const ms = mockStats(s); const bar = role.bar; if (!ms.latest) return `<div class="card"><h2>Mock exams</h2><p class="muted">Your estimate above comes from practice. A timed mock shows how you do under pressure. Your first one is the most useful data point you can add.</p><a class="btn primary" href="#/mocks">Open mock exams</a></div>`; const v = verdict(ms.latest.pct, bar); return `<div class="card"><div class="stagehead"><h2>Mock exams</h2><span class="badge ${v[1]}">${v[0]}</span></div><p>Latest full mock: <b>${Math.round(ms.latest.pct)}%</b> (${esc(ms.latest.title)}).${ms.avg2 !== null ? ` Average of the last two: <b>${Math.round(ms.avg2)}%</b>.` : ''} Pass mark ${bar}%. The goal is two in a row at ${bar + 10}% or more.</p><a class="btn" href="#/mocks">Take another mock</a></div>`; })()}
     ${f && r.enoughData ? `<div class="card"><h2>Best use of your next session</h2>
       <p><b>${esc(f.name)}</b> has the most room to grow (${pct(f.readiness)} ready). ${esc(f.tip)}</p>
       ${f.nextItem ? `<a class="btn primary" href="#/item/${f.nextItem.id}">Next in ${esc(f.name)}: ${esc(f.nextItem.title)}</a>` : '<p class="muted">Everything in this area is done. Redo the review list below.</p>'}</div>` : ''}
@@ -387,6 +422,7 @@ function viewSettings() {
 
 // ------------------------------------------------------------------ router
 async function render() {
+  stopMock();
   const route = location.hash.replace(/^#/, '') || '/';
   const [, a, b] = route.split('/');
   const s = getState();
@@ -395,7 +431,9 @@ async function render() {
   if (a === 'setup') return viewSetup();
   if (a === 'today' || route === '/') return viewToday();
   if (a === 'roadmap') return viewRoadmap();
-  if (a === 'item') return viewItem(b);
+  if (a === 'item') { if (findItem(b)?.mock) { location.replace(`#/mock/${b}`); return; } return viewItem(b); }
+  if (a === 'mocks') return viewMocks();
+  if (a === 'mock') return viewMock(b);
   if (a === 'readiness') return viewReadiness();
   if (a === 'reference') return viewReference();
   if (a === 'internal') return viewInternal();
@@ -406,7 +444,7 @@ async function render() {
 // Re-render for global changes (sign-in, restore), but never while a lesson is open or while typing,
 // so learner code and answers are never wiped.
 function softRender() {
-  if (location.hash.startsWith('#/item')) return;
+  if (location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/')) return;
   if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
   render();
 }
@@ -414,7 +452,7 @@ subscribe(softRender);
 
 // Study timer: counts seconds while a lesson page is open and visible.
 setInterval(() => {
-  if (document.visibilityState !== 'visible' || !getState().profile || !location.hash.startsWith('#/item')) return;
+  if (document.visibilityState !== 'visible' || !getState().profile || !(location.hash.startsWith('#/item') || location.hash.startsWith('#/mock/'))) return;
   update((s) => { const k = ymd(); s.log[k] = (s.log[k] || 0) + 10; }, { silent: true });
 }, 10000);
 

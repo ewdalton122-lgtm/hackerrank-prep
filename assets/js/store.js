@@ -18,7 +18,7 @@ export function subscribe(fn) { subs.add(fn); return () => subs.delete(fn); }
 const emit = () => subs.forEach((f) => f());
 
 function blank() {
-  return { v: 1, updatedAt: 0, profile: null, progress: {}, log: {}, notes: {} };
+  return { v: 1, updatedAt: 0, profile: null, progress: {}, log: {}, notes: {}, mocks: [] };
 }
 function load() {
   try { return { ...blank(), ...JSON.parse(localStorage.getItem(KEY) || '{}') }; }
@@ -83,6 +83,8 @@ function merge(a, b) {
     Object.entries(y.missed || {}).forEach(([k, v]) => { missed[k] = Math.max(missed[k] || 0, v); });
     out.progress[id] = { ...pick, missed, parts: { ...(x.parts || {}), ...(y.parts || {}), ...(pick.parts || {}) } };
   });
+  const seen = new Set();
+  out.mocks = [...(a.mocks || []), ...(b.mocks || [])].filter((m) => { const k = `${m.id}@${m.at}`; if (seen.has(k)) return false; seen.add(k); return true; }).sort((x, y) => x.at - y.at);
   const days = new Set([...Object.keys(a.log || {}), ...Object.keys(b.log || {})]);
   days.forEach((d) => { out.log[d] = Math.max(a.log?.[d] || 0, b.log?.[d] || 0); });
   out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);

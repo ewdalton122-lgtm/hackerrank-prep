@@ -15,6 +15,8 @@ import { writtenMore } from './writtenmore.js';
 import { ioSets } from './pythonio.js';
 
 const r = (id, title, minutes, blurb, links, blocks) => ({ id, title, minutes, blurb, links, blocks });
+const opt = (item) => ({ ...item, optional: true });
+const mockItem = (id, title, minutes, blurb) => ({ id, title, minutes, blurb, mock: true, blocks: [] });
 
 const codingStrategy = {
   id: 'cd-strategy',
@@ -155,28 +157,31 @@ export const STAGES = [
   },
   {
         id: 's7', num: 7, title: 'Exam simulation', roles: ['ds', 'fde'],
-    summary: 'Timed practice under exam conditions until your scores are comfortably above the bar.',
+    summary: 'Timed mock exams inside this site, scored by skill area, until you clear the pass mark with room to spare. The real HackerRank sample test is the one outside item worth doing.',
     items: [
+      mockItem('mock-1', 'Mock exam 1: full timed practice', 90, 'Twelve multiple-choice, two SQL, two coding, one prompt drill and one written reply, scored by skill area.'),
+      mockItem('mock-2', 'Mock exam 2: a different set', 90, 'Take it after reviewing Mock 1. Aim to beat the pass mark by at least 10 points.'),
+      opt(mockItem('mock-sprint', 'Review sprint (as many times as you like)', 20, 'Twelve multiple-choice questions drawn from lessons you have studied, weighted toward the ones you got wrong.')),
       r('sim-1', 'Retake the HackerRank sample test', 45, 'Compare with your first attempt.', [
         { label: 'HackerRank sample test', url: 'https://www.hackerrank.com/test/sample', use: 'Full screen, timed, no notes.' },
       ]),
-      r('sim-2', 'Skills certification: SQL (Basic)', 90, 'A free, timed SQL test.', [
+      opt(r('sim-2', 'Skills certification: SQL (Basic)', 90, 'A free, timed SQL test.', [
         { label: 'HackerRank SQL (Basic) certification', url: 'https://www.hackerrank.com/skills-verification/sql_basic', use: 'Treat it like the real thing: one sitting, no help.' },
-      ]),
-      r('sim-3', 'Skills certification: Python (Basic)', 90, 'A free, timed Python test.', [
+      ])),
+      opt(r('sim-3', 'Skills certification: Python (Basic)', 90, 'A free, timed Python test.', [
         { label: 'HackerRank Python (Basic) certification', url: 'https://www.hackerrank.com/skills-verification/python_basic', use: 'About 90 minutes, 2 questions.' },
-      ]),
-      r('sim-4', 'Mixed mock 1 (90 minutes)', 120, 'One coding problem, one SQL problem, one prompt drill, four MCQs, one written reply.', [
+      ])),
+      opt(r('sim-4', 'Mixed mock 1 (90 minutes)', 120, 'One coding problem, one SQL problem, one prompt drill, four MCQs, one written reply.', [
         { label: 'Build your own mock', url: 'https://www.hackerrank.com/domains/sql', use: 'Pick one unseen Medium SQL and one unseen Easy/Medium coding problem. Add a new prompt drill from a friend or the AI, plus 4 of your own MCQ flashcards. Time: coding 35 min, SQL 20, prompt 15, MCQ 8, written 7, review 5.' },
       ], [
         { t: 'p', text: 'After the mock, write down every point you lost and **why**: syntax, logic, format or time. Fix the pattern, not the single problem.' },
-      ]),
-      r('sim-5', 'Mixed mock 2 (90 minutes)', 120, 'Repeat with new problems.', [
+      ])),
+      opt(r('sim-5', 'Mixed mock 2 (90 minutes)', 120, 'Repeat with new problems.', [
         { label: 'HackerRank Interview Preparation Kit', url: 'https://www.hackerrank.com/interview/interview-preparation-kit', use: 'Choose problems you have not seen.' },
-      ]),
-      r('sim-6', 'Mixed mock 3 (90 minutes)', 120, 'Aim for your target score two times in a row.', [
+      ])),
+      opt(r('sim-6', 'Mixed mock 3 (90 minutes)', 120, 'Aim for your target score two times in a row.', [
         { label: 'HackerRank Mock Interviews', url: 'https://www.hackerrank.com/mock-interviews', use: 'Optional extra timed practice.' },
-      ]),
+      ])),
     ],
   },
   {
