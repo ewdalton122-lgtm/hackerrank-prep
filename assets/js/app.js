@@ -34,7 +34,7 @@ function shell(inner, active) {
         <a class="brand" href="#/today"><span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg></span>Zero to Assessment</a>
         <nav class="nav">${NAV.map(([h, l, d]) => { const n = h === '#/review' && s.profile ? reviewCount(s) : 0; return `<a href="${h}" class="${active === h ? 'active' : ''}">${icon(d)}<span>${l}</span>${n ? `<em class="navbadge">${n}</em>` : ''}</a>`; }).join('')}</nav>
         <div class="foot">
-          ${plan ? `<b>${plan.pct}% complete</b><div class="bar"><i style="width:${plan.pct}%"></i></div><div>${ROLES[s.profile.role].name}</div>` : '<b>Welcome</b>'}
+          ${plan ? `<div class="foot-prog"><b>${plan.pct}% complete</b><div class="bar"><i style="width:${plan.pct}%"></i></div><div>${ROLES[s.profile.role].name}</div></div>` : '<b>Welcome</b>'}
           <div style="margin-top:6px;opacity:.8">${esc(user?.email || '')}</div>
           <div style="opacity:.7">${syncText}</div>
         </div>

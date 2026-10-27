@@ -65,7 +65,9 @@ pre.code, .editor { max-width: 100%; }
   .brand { padding: 0 8px 0 0; }
   .nav { display: flex; gap: 2px; flex-wrap: wrap; }
   .nav a { padding: 8px 10px; }
-  .side .foot { display: none; }
+  .side .foot { width: 100%; background: none; padding: 2px 8px; font-size: .78rem; color: #b9d6f7; }
+  .side .foot .foot-prog { display: none; }
+  .side .foot > div { margin: 0 !important; }
   .main { padding-top: 22px; }
 }
 
