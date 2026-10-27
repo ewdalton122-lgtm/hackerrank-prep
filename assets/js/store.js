@@ -154,5 +154,7 @@ export async function fetchInternal() {
   if (!client || !session) return { rows: [], reason: 'signed-out' };
   const { data, error } = await client.from('internal_resources').select('*').order('sort', { ascending: true });
   if (error) return { rows: [], reason: 'error', error };
-  return { rows: data || [], reason: data?.length ? 'ok' : 'empty' };
+  if (data?.length) return { rows: data, reason: 'ok', allowed: true };
+  const { data: allowed } = await client.rpc('is_allowed');
+  return { rows: [], reason: 'empty', allowed: allowed === true };
 }

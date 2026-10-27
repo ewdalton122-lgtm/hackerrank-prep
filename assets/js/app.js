@@ -265,7 +265,7 @@ async function viewInternal() {
   body.innerHTML = '<div class="card"><span class="spinner"></span>Loading...</div>';
   const res = await fetchInternal();
   if (res.reason === 'error') body.innerHTML = `<div class="card">${feedback('bad', 'Could not load internal resources.', ['Check that the database schema was run and your email is on the allow list.'])}</div>`;
-  else if (!res.rows.length) body.innerHTML = '<div class="card"><h2>Nothing here yet</h2><p>Either no resources have been added, or this email is not on the allow list.</p></div>';
+  else if (!res.rows.length) body.innerHTML = `<div class="card"><h2>${res.allowed ? 'You are approved. Nothing has been added yet.' : 'This email is not on the approved list.'}</h2><p>${res.allowed ? 'Internal resources will show up here as soon as they are added to the private database.' : 'Ask the site owner to add this email address to the allow list.'}</p></div>`;
   else {
     const groups = {};
     res.rows.forEach((r) => (groups[r.stage || 'General'] ||= []).push(r));
