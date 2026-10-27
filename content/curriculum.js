@@ -4,6 +4,8 @@ import { sql, sqlAdv } from './sql.js';
 import { prompts } from './prompts.js';
 import { systems } from './systems.js';
 import { practice } from './practice.js';
+import { sqlDrills } from './sqlpractice.js';
+import { promptMore } from './promptdrills.js';
 
 const r = (id, title, minutes, blurb, links, blocks) => ({ id, title, minutes, blurb, links, blocks });
 
@@ -68,12 +70,12 @@ export const STAGES = [
   {
     id: 's3', num: 3, title: 'SQL advanced', roles: ['ds', 'fde'],
     summary: 'Window functions, ranking, running totals and date functions.',
-    items: sqlAdv,
+    items: [...sqlAdv.slice(0, 3), ...sqlDrills, ...sqlAdv.slice(3)],
   },
   {
     id: 's4', num: 4, title: 'Prompt engineering', roles: ['ds', 'fde'],
     summary: 'Write prompts whose output matches an exact expected answer.',
-    items: prompts,
+    items: [...prompts.slice(0, -1), ...promptMore, ...prompts.slice(-1)],
   },
   {
     id: 's5', num: 5, title: 'System design and stakeholders', roles: ['ds', 'fde'],
