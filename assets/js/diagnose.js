@@ -96,7 +96,12 @@ export function diagnosePyTest(entry, ctx = {}) {
   const asNum = (s) => (s !== undefined && s.trim() !== '' && !Number.isNaN(Number(s)) ? Number(s) : null);
   const isStr = (s) => /^['"]/.test(s || '');
 
-  if (got === 'None' && expected !== 'None') {
+  const squash = (s) => (s || '').replace(/\s+/g, '');
+  if (got !== 'None' && got !== expected && squash(got) === squash(expected) && /['"]/.test(expected || '')) {
+    lead = 'The right characters, but the spaces are off.';
+    steps.push('Graders compare text exactly, including every space. Compare each line with the expected one, character by character.');
+    steps.push('Building a row? Check how many spaces come before the first character, e.g. `" " * (n - i)`.');
+  } else if (got === 'None' && expected !== 'None') {
     if (printed && printed.trim()) {
       lead = 'Your function printed a value but did not return it.';
       steps.push('The grader reads what your function returns, not what it prints.');

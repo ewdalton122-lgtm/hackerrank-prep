@@ -3,6 +3,7 @@ import { python } from './python.js';
 import { sql, sqlAdv } from './sql.js';
 import { prompts } from './prompts.js';
 import { systems } from './systems.js';
+import { practice } from './practice.js';
 
 const r = (id, title, minutes, blurb, links, blocks) => ({ id, title, minutes, blurb, links, blocks });
 
@@ -118,6 +119,10 @@ export const STAGES = [
         { label: 'Minimum Absolute Difference in an Array', url: 'https://www.hackerrank.com/challenges/minimum-absolute-difference-in-an-array/problem', use: 'Sort, compare neighbours' },
         { label: 'Grid Challenge', url: 'https://www.hackerrank.com/challenges/grid-challenge/problem', use: 'Sorting inside a grid (harder)' },
       ]),
+      r('cw-6', 'Software Engineer prep kit', 240, 'HackerRank\'s own interview-style problem set.', [
+        { label: 'HackerRank Software Engineer Prep Kit', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit', use: 'Needs a HackerRank login. Pick problems tagged easy first. Binary search and running-average problems are good practice.' },
+        { label: 'HackerRank Preparation Kits', url: 'https://www.hackerrank.com/interview/preparation-kits', use: '1-week kit: 21 problems.' },
+      ]),
       r('cw-7', 'Binary search and running totals', 240, 'Two patterns that show up in real exam problems.', [
         { label: 'Lookup with Binary Search', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/lookup-with-binary-search/problem', use: 'Plain binary search. Needs a HackerRank login.' },
         { label: 'Find Peak Element in Bitonic Array', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/find-peak-element-in-bitonic-array/problem', use: 'Binary search with a twist. Do it after the one above.' },
@@ -134,6 +139,7 @@ export const STAGES = [
         { t: 'code', text: 'total = 0\nfor i, x in enumerate(nums):\n    if i > 0 and x > total / i:\n        print(x, "beats the average of the items before it")\n    total += x' },
         { t: 'tip', text: 'Write the simple version first and submit it, then improve. Each hidden test case earns its own points.' },
       ]),
+      ...practice,
       r('cw-8', 'Checkpoint: the 13 representative problems', 300, 'A representative set of 13 problems. If you can solve most of these without help, your coding is in good shape.', [
         { label: '1. Solve Me First', url: 'https://www.hackerrank.com/challenges/solve-me-first/problem', use: 'Functions and return' },
         { label: '2. Simple Array Sum', url: 'https://www.hackerrank.com/challenges/simple-array-sum/problem', use: 'Loop with a running total' },
@@ -148,10 +154,6 @@ export const STAGES = [
         { label: '11. Diagonal Difference', url: 'https://www.hackerrank.com/challenges/diagonal-difference/problem', use: '2D grid' },
         { label: '12. Count Elements Greater Than Previous Average', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit/challenges/count-elements-greater-than-previous-average/problem', use: 'Running average' },
         { label: '13. Grid Challenge', url: 'https://www.hackerrank.com/challenges/grid-challenge/problem', use: '2D grid and sorting' },
-      ]),
-      r('cw-6', 'Software Engineer prep kit', 240, 'HackerRank\'s own interview-style problem set.', [
-        { label: 'HackerRank Software Engineer Prep Kit', url: 'https://www.hackerrank.com/contests/software-engineer-prep-kit', use: 'Needs a HackerRank login. Pick problems tagged easy first. Binary search and running-average problems are good practice.' },
-        { label: 'HackerRank Preparation Kits', url: 'https://www.hackerrank.com/interview/preparation-kits', use: '1-week kit: 21 problems.' },
       ]),
     ],
   },
