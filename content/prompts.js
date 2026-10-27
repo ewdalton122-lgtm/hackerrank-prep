@@ -222,6 +222,7 @@ export const prompts = [
   },
   {
     id: 'pe-r-learn',
+    optional: true,
     title: 'Study: prompting references',
     minutes: 330,
     blurb: 'Read the official guidance and run a structured tutorial.',

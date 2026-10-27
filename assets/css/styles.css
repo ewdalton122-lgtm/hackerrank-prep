@@ -234,3 +234,9 @@ details.schema summary { cursor: pointer; font-weight: 600; color: var(--ink); }
 .io { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 6px 0 4px; }
 .io b { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
 .io pre.code { margin: 0; }
+
+ul.lint{list-style:none;padding:0;margin:10px 0}
+ul.lint li{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line,#e4e8f0)}
+ul.lint li:last-child{border-bottom:0}
+.badge.bad{background:#fdecec;color:#9b1c1c}
+ul.lint .badge{flex:none;white-space:nowrap;min-width:78px;text-align:center}

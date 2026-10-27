@@ -2,7 +2,7 @@
 import { getState, update, noteMiss } from './store.js';
 import { esc, inline, feedback, copyText, enableTab, renderBlocks } from './ui.js';
 import { runPython, pythonReady, runQuery } from './runners.js';
-import { explainPyError, diagnosePyTest, diagnoseIo, explainSqlError, compareSql, diagnoseText } from './diagnose.js';
+import { explainPyError, diagnosePyTest, diagnoseIo, explainSqlError, compareSql, diagnoseText, lintPrompt } from './diagnose.js';
 import { DATASETS } from '../../content/sqldata.js';
 
 const getNote = (k) => getState().notes[k] ?? '';
@@ -305,7 +305,8 @@ export function mountPrompt(host, item, onPass) {
     <label class="field">Your prompt <span class="hint">Write it once. Put <code>{input}</code> where the data should go.</span>
       <textarea class="editor" style="min-height:160px;white-space:pre-wrap" spellcheck="true" data-role="tmpl">${esc(getNote(tmplKey))}</textarea>
     </label>
-    <div class="row" style="margin-bottom:6px"><button class="btn" data-act="hint">Hint (0/${ex.hints.length})</button></div>
+    <div class="row" style="margin-bottom:6px"><button class="btn" data-act="lint">Self-check my prompt</button><button class="btn" data-act="hint">Hint (0/${ex.hints.length})</button></div>
+    <div class="lintbox"></div>
     <div class="hintbox"></div>
     ${ex.cases.map((c, i) => `
       <div class="case" data-ci="${i}">
@@ -322,6 +323,14 @@ export function mountPrompt(host, item, onPass) {
   const tmpl = host.querySelector('[data-role="tmpl"]');
   tmpl.addEventListener('input', () => setNote(tmplKey, tmpl.value));
   const hints = hintUi(host, ex, st);
+  host.querySelector('[data-act="lint"]').onclick = () => {
+    const r = lintPrompt(tmpl.value, ex);
+    const box = host.querySelector('.lintbox');
+    if (r.text) { box.innerHTML = feedback('hint', 'Write your prompt in the box first, then run the self-check.'); return; }
+    const rows = r.checks.map((c) => `<li class="lintrow ${c.ok ? 'ok' : c.soft ? 'soft' : 'bad'}"><span class="badge ${c.ok ? 'ok' : c.soft ? 'gray' : 'bad'}">${c.ok ? 'present' : c.soft ? 'consider' : 'missing'}</span> <span>${inline(c.label)}${c.ok || !c.tip ? '' : `<span class="muted small"> ${inline(c.tip)}</span>`}</span></li>`).join('');
+    const lead = r.must === 0 ? 'No must-haves missing. Now test it with a real assistant.' : `${r.must} must-have${r.must > 1 ? 's' : ''} missing.`;
+    box.innerHTML = `<div class="fb ${r.must === 0 ? 'ok' : 'info'}"><b class="lead">${lead}</b><ul class="lint">${rows}</ul><p class="small muted">This check reads your prompt only. It cannot run a model, so a clean result does not prove the prompt works. Run it on every case below.</p></div>`;
+  };
 
   host.querySelectorAll('.case').forEach((el) => {
     const ci = Number(el.dataset.ci);

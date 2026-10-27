@@ -271,6 +271,7 @@ export const systems = [
   },
   {
     id: 'sd-r-primer',
+    optional: true,
     title: 'Study: System Design Primer (selected sections)',
     minutes: 360,
     blurb: 'Read only what the multiple-choice questions need.',

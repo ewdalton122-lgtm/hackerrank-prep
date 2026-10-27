@@ -9,6 +9,9 @@ import { sqf, sqa } from './sqlmore.js';
 import { promptMore } from './promptdrills.js';
 import { interview } from './interview.js';
 import { pythonMore } from './pythonmore.js';
+import { promptDrills2, promptDiagnose } from './promptlab.js';
+import { mcqBank } from './mcqbank.js';
+import { writtenMore } from './writtenmore.js';
 import { ioSets } from './pythonio.js';
 
 const r = (id, title, minutes, blurb, links, blocks) => ({ id, title, minutes, blurb, links, blocks });
@@ -88,12 +91,23 @@ export const STAGES = [
   {
     id: 's4', num: 4, title: 'Prompt engineering', roles: ['ds', 'fde'],
     summary: 'Write prompts whose output matches an exact expected answer.',
-    items: [...prompts.slice(0, -1), ...promptMore, ...prompts.slice(-1)],
+    items: (() => {
+      const by = Object.fromEntries([...prompts, ...promptMore, ...promptDrills2, ...promptDiagnose].map((i) => [i.id, i]));
+      const order = [...prompts.slice(0, -1).map((i) => i.id), ...promptMore.map((i) => i.id),
+        'pe-dx-extra', 'pe-dx-format', 'pe-sort', 'pe-mask', 'pe-status', 'pe-dx-edge', 'pe-tags', 'pe-sum',
+        'pe-dx-examples', 'pe-dx-inject', 'pe-inject', 'pe-initials', 'pe-dedupe', 'pe-time', 'pe-dx-plan'];
+      return [...order.map((id) => by[id]), ...prompts.filter((i) => i.optional)];
+    })(),
   },
   {
     id: 's5', num: 5, title: 'System design and stakeholders', roles: ['ds', 'fde'],
-    summary: 'Architecture vocabulary for multiple choice, and structured written replies.',
-    items: systems,
+    summary: 'The vocabulary and judgment behind the multiple-choice questions, then structured written replies.',
+    items: (() => {
+      const core = systems.filter((i) => !i.optional && !i.id.startsWith('sk-') && i.id !== 'sd-mcq');
+      const skills = systems.filter((i) => i.id.startsWith('sk-'));
+      const technique = systems.find((i) => i.id === 'sd-mcq');
+      return [...core, ...mcqBank, technique, ...skills, ...writtenMore, ...systems.filter((i) => i.optional)];
+    })(),
   },
   {
     id: 's6', num: 6, title: 'Coding practice', roles: ['ds', 'fde'],

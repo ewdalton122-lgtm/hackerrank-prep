@@ -18,6 +18,7 @@ export function renderBlocks(blocks = []) {
       case 'p': return `<p>${inline(b.text)}</p>`;
       case 'code': return `<pre class="code"><code>${esc(b.text)}</code></pre>`;
       case 'list': return `<ul>${b.items.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`;
+      case 'table': return `<div class="scroll"><table class="res"><thead><tr>${b.head.map((h) => `<th>${inline(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
       case 'analogy': return `<div class="callout analogy"><b>Finance lens</b><p>${inline(b.text)}</p></div>`;
       case 'tip': return `<div class="callout tip"><b>Tip</b><p>${inline(b.text)}</p></div>`;
       case 'warn': return `<div class="callout warn"><b>Watch out</b><p>${inline(b.text)}</p></div>`;

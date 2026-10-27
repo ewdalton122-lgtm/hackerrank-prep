@@ -358,3 +358,42 @@ export function diagnoseIo(entry, ctx = {}) {
   if (ctx.hint) steps.push(ctx.hint);
   return { lead, steps };
 }
+
+// ---------------- Prompt self-check ----------------
+// A quick look at the prompt text itself. It cannot run a model, so it cannot say the prompt WORKS.
+// It only points out what is commonly missing.
+function mentionTokens(task) {
+  const t = new Set();
+  (task.match(/\b[A-Z]{3,}\b/g) || []).forEach((w) => t.add(w));
+  (task.match(/\[[A-Z_]+\]/g) || []).forEach((w) => t.add(w));
+  (task.match(/`[^`]+`/g) || []).forEach((w) => { const x = w.slice(1, -1); if (x.length >= 2 && x.length <= 14 && !/\{|\}/.test(x)) t.add(x); });
+  ['JSON', 'CSV', 'YYYY', 'HH', 'MM', 'DD'].forEach((w) => t.delete(w));
+  return [...t].slice(0, 6);
+}
+
+export function lintPrompt(template, ex) {
+  const text = String(template || '');
+  const words = (text.match(/\S+/g) || []).length;
+  const checks = [];
+  const add = (ok, label, tip, soft = false) => checks.push({ ok, label, tip, soft });
+
+  add(text.includes('{input}'), 'The prompt has the {input} placeholder', 'Put `{input}` on its own line where the data should go. Without it the data is just added at the end.');
+  add(/\b(output|answer|reply|respond|return|print|give)\b[^.\n]{0,15}\b(only|just|exactly)\b|\b(only|just)\b[^.\n]{0,40}\b(output|answer|label|result|reply|respond|return|print|total|number|word|time|date|text|list|line)|nothing else|no (explanation|preamble|extra|commentary|other text)|without (any )?(explanation|commentary)/i.test(text),
+    'It asks for only the output, with nothing else',
+    'Add a line such as "Output only the result. No explanation, no preamble, no quotes."');
+  const thinkAloud = /step[- ]by[- ]step|explain (your|the)|show (your|the) (work|reasoning|steps)|walk through|think aloud/i.test(text) && !/(do not|don't|never|no) (explain|show|think)|silently|without explain/i.test(text);
+  add(!thinkAloud, 'It does not ask the model to explain or show its work', 'Reasoning text becomes part of the reply and breaks an exact match. Say "work silently, output only the final result".');
+  const tokens = mentionTokens(ex.task || '');
+  if (tokens.length) {
+    const missing = tokens.filter((tk) => !text.includes(tk));
+    add(missing.length === 0, 'It names the exact labels or format from the task', missing.length ? `Your prompt does not mention: ${missing.map((m) => '`' + m + '`').join(', ')}. Spell out the exact words or pattern to output.` : '');
+  }
+  add(/example|e\.g\.|for instance|=>|->|\u2192|becomes|input:|output:/i.test(text), 'It includes a worked example', 'One example of the exact input and output removes most guessing.', true);
+  add(/\bif\b[^.\n]{0,60}\b(no|none|not|empty|nothing|missing|only one|else|any other|otherwise)\b|otherwise|any other/i.test(text), 'It says what to do in an edge case', 'Add a rule for "nothing matches", "empty input" or "unknown value", with the exact text to output.', true);
+  add(/no (markdown|code ?fence|quotes?|quotation|formatting)|plain text|do not (use )?(markdown|quotes)/i.test(text), 'It rules out markdown, quotes and code fences', 'Add "No markdown, no quotation marks, no code fences".', true);
+  add(words >= 12, 'It is long enough to carry real instructions', 'A one-line prompt rarely covers format and edge cases.', true);
+  add(words <= 250, 'It is short enough to stay consistent', 'Past about 250 words, rules start to conflict. Cut anything that is not a rule or an example.', true);
+  const hard = checks.filter((c) => !c.soft);
+  const must = hard.filter((c) => !c.ok).length;
+  return { checks, must, text: text.trim().length === 0 };
+}
